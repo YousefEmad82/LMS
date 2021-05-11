@@ -6,7 +6,23 @@ const auth = require('../middlwares/auth')
 const Enroll = require('../database/models/enroll')
 const { findOne } = require('../database/models/user')
 const { isValidObjectId } = require('mongoose')
+const multer = require('multer')
+const upload = multer({
+    dest : 'uploads',
+    limits : {
+        fileSize : 50000000,
+    },
+    // fileFilter(req,file,callback){
+    //     if(!file.originalname.match(/\.(pdf)$/)){  //regular expression 
+    //         return callback(new Error('please upload a pdf file'))
+    //     }
+    //     callback(undefined,true)
+    // }, 
+})
+const fs = require('fs')
 require('../database/mongoose')
+
+
 
 
 
@@ -344,6 +360,39 @@ router.delete('/admins/courses/delete',auth,async(req,res)=>{
     }
 })
 //======================================================================================================================================
+//get a course by  its code *********************
+router.get('/courses/course',auth,async(req,res)=>{
+    try{
+        if(req.user.role === 'student' || req.user.role ==='instructor'){
+            const course = await Course.findOne({code : req.body.code})
+            if(!course){
+                return res.status(404).send("can't find the course!")
+            }
+            res.send(course )//course.overview
+        }
+        else{
+            res.status(403).send('unauthorized')
+        }
 
+    }catch(e){
+        res.status(500).send(e.message)
+    }
+})
+//======================================================================================================================================
+//instructor uploads lessons 
+router.post('/courses/course/lessonsUpload',auth,upload.single('upload'),async (req,res)=>{
+    try{
+        if(req.user.role === 'instructor'){
+            
+           
+            res.send()
 
+        }else{
+            res.status(403).send(unauthorized)
+        }
+
+    }catch(e){
+        res.status(500).send(e.message)
+    }
+})
 module.exports = router
