@@ -3,6 +3,35 @@ const router = express.Router()
 const User = require('../database/models/user')
 const Enroll = require('../database/models/enroll')
 const auth = require('../middlwares/auth')
+const multer = require('multer')
+const csvtojson = require('csvtojson')
+
+
+
+//======================================================================================================================================
+const userStorage = multer.diskStorage({  //csv files for creating users
+    destination: function (req, file, cb) {
+      cb(null, 'uploads')
+    },
+    filename:   function (req, file, cb) {
+      cb(null,   'users' +Date.now()+'.txt')
+    }
+
+  })
+const userUpload = multer({ //uploads csv files for creating users
+    storage : userStorage,
+    limits : {
+        fileSize : 50000000,
+    },
+    fileFilter(req,file,callback){
+        if(!file.originalname.match(/\.(txt)$/)){  //regular expression 
+            return callback(new Error('please upload a pdf file'))
+        }
+        callback(undefined,true)
+    }, 
+})
+
+
 
 
 //======================================================================================================================================
@@ -38,7 +67,6 @@ router.post('/users',async(req,res)=>{
         })
         await user.save()
         // const token = await user.generateAuthToken()
-        res.status(201).send(user)
 
 
         }
@@ -53,10 +81,12 @@ router.post('/users',async(req,res)=>{
         })
         await user.save()
         // const token = await user.generateAuthToken()
-        res.status(201).send(user)
+        console.log('rgkrg')
 
 
         }
+        res.status(201).send(user)
+
 
     }catch(e){
         res.status(400).send(e.message)
@@ -145,7 +175,7 @@ router.get('/admins/getStudentsOfCertainYear',auth,async(req,res)=>{
                 year : req.query.year
             })
             if(students.length === 0){
-                return res.status(404).send()
+                return res.status(404).send('can not find the students')
             }
             res.status(200).send(students)
 
@@ -309,6 +339,62 @@ router.get('/students/student',auth,async(req,res)=>{
     }catch(e){
         res.status(500).send(e.message)
 
+    }
+})
+//======================================================================================================================================
+//create users from file
+router.post('/usersAuto',auth,userUpload.single('upload'), async (req,res)=>{
+    const indicesOfFailedSaving = []
+    try{
+        if(req.user.role === 'admin'){
+                    const users = await csvtojson().fromFile("./uploads/"+req.file.filename)
+                    const savingStatus =  await  Promise.allSettled(users.map(async(row)=>{
+                    if(row.role === 'student'){
+                        const user = new User({
+                            name : row.name,
+                            email : row.email,
+                            password : row.password,
+                            role : row.role,
+                            code : row.code,  
+                            year : row.year,     
+                        })
+
+                        await  user.save()
+                    }
+                     else{
+                        const user = new User({
+                            name : row.name,
+                            email : row.email,
+                            password : row.password,
+                            role : row.role,
+                            code : row.code,   
+                        }) 
+
+                        await  user.save()
+
+                     }
+                }))
+                
+                savingStatus.forEach((save,index)=>{
+                    if(save.status != 'fulfilled'){
+                        indicesOfFailedSaving.push(index+1)
+                    }
+                })
+                if(indicesOfFailedSaving.length === 0){
+                   return res.status(201).send('successfully created all the users') 
+                }
+                throw new Error('there was an error while creating the users in lines : ' + indicesOfFailedSaving)
+
+        }
+        else{
+            res.status(403).send('unauthorized')
+        } 
+    }catch(e){
+        res.status(500).send({
+
+            error : e.message, 
+          
+        })
     }
 })
 //======================================================================================================================================

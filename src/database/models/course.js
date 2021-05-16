@@ -35,15 +35,15 @@ const mongoose = require('mongoose')
      },
      lessons : [
          {
-            lesson_name : {
+            lesson_name_filesystem : {
                 type : String,
             },
             lesson_title : {
                 type : String,
             },
-            lesson_body : {
+            instructor_id: {
                 type : String,
-            },
+            },  
          }
      ]
           

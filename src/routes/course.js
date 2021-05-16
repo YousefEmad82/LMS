@@ -6,31 +6,47 @@ const auth = require('../middlwares/auth')
 const Enroll = require('../database/models/enroll')
 const { findOne } = require('../database/models/user')
 const { isValidObjectId } = require('mongoose')
+const lineReader = require('line-reader')
 const multer = require('multer')
-const upload = multer({
-    dest : 'uploads',
-    limits : {
-        fileSize : 50000000,
-    },
-    // fileFilter(req,file,callback){
-    //     if(!file.originalname.match(/\.(pdf)$/)){  //regular expression 
-    //         return callback(new Error('please upload a pdf file'))
-    //     }
-    //     callback(undefined,true)
-    // }, 
-})
+const csvtojson = require('csvtojson')
 const fs = require('fs')
+const Assignment = require('../database/models/assignment')
 require('../database/mongoose')
 
 
-
-
-
-
-
-
-
 //======================================================================================================================================
+var storage = multer.diskStorage({  //uploads of lessons and assignments
+    destination: function (req, file, cb) {
+      cb(null, 'uploads')
+    },
+    filename:   function (req, file, cb) {
+      cb(null,   req.user.name+'.pdf')
+    }
+
+  })
+const upload = multer({ //uploads of lessons and assignments 
+    storage : storage,
+    limits : {
+        fileSize : 50000000,
+    },
+    fileFilter(req,file,callback){
+        if(!file.originalname.match(/\.(pdf)$/)){  //regular expression 
+            return callback(new Error('please upload a pdf file'))
+        }
+        callback(undefined,true)
+    }, 
+})
+
+
+
+
+
+
+
+
+
+
+
 //create a course
 router.post('/admins/addCourse',auth,async(req,res)=>{
     try{
@@ -383,9 +399,15 @@ router.get('/courses/course',auth,async(req,res)=>{
 router.post('/courses/course/lessonsUpload',auth,upload.single('upload'),async (req,res)=>{
     try{
         if(req.user.role === 'instructor'){
-            
-           
-            res.send()
+            const course = await Course.findById(req.body.course_id)
+            course.lessons = course.lessons.concat({
+                lesson_title : req.body.lesson_title,
+                lesson_name_filesystem : req.file.filename,
+                instructor_id : req.user._id,
+
+            })
+            await course.save()
+            res.status(200).send('successfully uploaded ')
 
         }else{
             res.status(403).send(unauthorized)
@@ -395,4 +417,118 @@ router.post('/courses/course/lessonsUpload',auth,upload.single('upload'),async (
         res.status(500).send(e.message)
     }
 })
+//======================================================================================================================================
+//download a lesson  
+router.get('/courses/lessons/lesson',auth,async(req,res)=>{
+    try{
+        const course = await Course.findById({_id : req.body.id})
+        if(!course){
+            return res.status(404).send('can not find the course')
+        }
+        const lesson = course.lessons.find((lesson)=>{
+            return lesson.lesson_title === req.body.lesson_title
+        })
+        if(!lesson){
+            return res.status(404).send('can not find the lesson ')
+        }
+        const path = 'uploads/' + lesson.lesson_name_filesystem
+        res.download(path)
+    }catch(e){
+        res.status(500).send(e.message)
+
+    }
+})
+//======================================================================================================================================
+//get all the lessons titles
+router.get('/courses/lessons',auth,async(req,res)=>{
+    try{
+        const course = await Course.findById({_id : req.body.course_id})
+        if(!course){
+            return res.status(404).send('can not find the course')
+        }
+        const lessons  =  []
+        if(!course.lessons){
+            return res.status(404).send('can not find the lessons')
+        }
+        course.lessons.forEach((lesson)=>{
+            lessons.push(lesson.lesson_title)
+        })
+        
+        res.send(lessons)
+
+    }catch(e){
+        res.status(500).send(e.message)
+    }
+})
+//======================================================================================================================================
+
+//a student uploads an assignment 
+router.post('/courses/course/assignmentUpload',auth,upload.single('upload'),async (req,res)=>{
+    try{
+        if(req.user.role === 'student'){
+            const course = await Course.findById(req.body.course_id)
+            const assignment = new Assignment({
+                title : req.body.title,
+                fileName : req.file.filename,
+                courseCode : req.body.courseCode,
+                studentCode : req.user.code,
+                studentName : req.user.name
+            })
+            await assignment.save()
+            res.status(200).send('successfully uploaded ')
+
+        }else{
+            res.status(403).send(unauthorized)
+        }
+
+    }catch(e){
+        res.status(500).send(e.message)
+    }
+})
+//======================================================================================================================================
+//get an assignment of a students of a certain course
+router.get('/courses/course/assignments/assignment',auth,async (req,res)=>{
+    try{
+        if(req.user.role === 'instructor'){
+            const assignment = await Assignment.findOne({_id  : req.body._id })
+            if(!assignment){
+                return res.status(404).send('can not find the assignment ')
+            }
+            const path = "uploads/"+ assignment.fileName
+            // const send_file = fs.readFileSync(path)
+            
+            res.download(path)
+        }
+        else{
+            res.status(403).send('unauthorized')
+        }
+
+    }catch(e){
+        res.status(500).send(e.message)
+
+    }
+})
+//======================================================================================================================================
+//get all the assignment titles
+router.get('/courses/course/assignments',auth,async(req,res)=>{
+    try{
+        if(req.user.role === 'instructor'){
+            const assignments = await Assignment.find({title : req.body.title})
+            if(assignments.length === 0 ){
+                return res.status(404).send('there are no assignments ')
+            }
+            res.send(assignments)
+            
+        }
+        else{
+            res.status(403).send('unauthorized')
+
+        }
+
+    }catch(e){
+        res.status(500).send(e.message)
+    }
+})
+//======================================================================================================================================
+
 module.exports = router
