@@ -445,7 +445,7 @@ router.get('/courses/lessons/lesson',auth,async(req,res)=>{
         res.download(path)
     }
     else{
-        res.status(404).send('unauthorized')
+        res.status(403).send('unauthorized')
     }
     }catch(e){
         res.status(500).send(e.message)
