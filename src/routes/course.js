@@ -422,10 +422,10 @@ router.post('/courses/course/lessonsUpload',auth,upload.single('upload'),async (
     }
 })
 //======================================================================================================================================
-//download a lesson  
+//student download a lesson  
 router.get('/courses/lessons/lesson',auth,async(req,res)=>{
     try{
-        const course = await Course.findById({_id : req.body.id})
+        const course = await Course.findById({_id : req.body.course_id})
         if(!course){
             return res.status(404).send('can not find the course')
         }
@@ -434,7 +434,6 @@ router.get('/courses/lessons/lesson',auth,async(req,res)=>{
             user_id : req.user._id
 
         })
-        console.log(enroll)
         if(enroll){
         const lesson = course.lessons.find((lesson)=>{
             return lesson.lesson_title === req.body.lesson_title
@@ -514,7 +513,7 @@ router.post('/courses/course/assignmentUpload',auth,upload.single('upload'),asyn
     }
 })
 //======================================================================================================================================
-//get an assignments  of a certain course
+//get  assignments  of a certain course
 router.get('/courses/course/assignments/assignment',auth,async (req,res)=>{
     try{
         const course = await Course.findOne({

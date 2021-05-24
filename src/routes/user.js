@@ -322,11 +322,11 @@ router.delete('/admins/deleteUser',auth,async(req,res)=>{
     }
 })
 //======================================================================================================================================
-//get a user by its code  *********************
+//admin get a student by its code  *********************
 router.get('/students/student',auth,async(req,res)=>{
     try{
         if(req.user.role != 'students'){
-            const student = User.findOne({code : req.body.code})
+            const student = await User.findOne({code : req.body.code})
             if(!student){
                 return res.status(404).send('can not find the student!')
             }
