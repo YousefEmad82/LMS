@@ -11,6 +11,7 @@ const multer = require('multer')
 const csvtojson = require('csvtojson')
 const fs = require('fs')
 const Assignment = require('../database/models/assignment')
+const zip = require('express-zip')
 require('../database/mongoose')
 
 
@@ -20,7 +21,7 @@ var storage = multer.diskStorage({  //uploads of lessons and assignments
       cb(null, 'uploads')
     },
     filename:   function (req, file, cb) {
-      cb(null,   req.user.name+'.pdf')
+      cb(null,   req.user.name+ Date.now()+ '.pdf')
     }
 
   })
@@ -398,8 +399,11 @@ router.get('/courses/course',auth,async(req,res)=>{
 //instructor uploads lessons 
 router.post('/courses/course/lessonsUpload',auth,upload.single('upload'),async (req,res)=>{
     try{
-        if(req.user.role === 'instructor'){
-            const course = await Course.findById(req.body.course_id)
+        const course = await Course.findById(req.body.course_id)
+        if(req.user.role === 'instructor' && req.user._id.toString() == course.instructor_id){
+            if(!course){
+                return res.status(404).send('can not find the course')
+            }
             course.lessons = course.lessons.concat({
                 lesson_title : req.body.lesson_title,
                 lesson_name_filesystem : req.file.filename,
@@ -410,7 +414,7 @@ router.post('/courses/course/lessonsUpload',auth,upload.single('upload'),async (
             res.status(200).send('successfully uploaded ')
 
         }else{
-            res.status(403).send(unauthorized)
+            res.status(403).send('unauthorized')
         }
 
     }catch(e){
@@ -425,6 +429,13 @@ router.get('/courses/lessons/lesson',auth,async(req,res)=>{
         if(!course){
             return res.status(404).send('can not find the course')
         }
+        const enroll = await Enroll.findOne({
+            course_id : course._id,
+            user_id : req.user._id
+
+        })
+        console.log(enroll)
+        if(enroll){
         const lesson = course.lessons.find((lesson)=>{
             return lesson.lesson_title === req.body.lesson_title
         })
@@ -433,6 +444,10 @@ router.get('/courses/lessons/lesson',auth,async(req,res)=>{
         }
         const path = 'uploads/' + lesson.lesson_name_filesystem
         res.download(path)
+    }
+    else{
+        res.status(404).send('unauthorized')
+    }
     }catch(e){
         res.status(500).send(e.message)
 
@@ -446,6 +461,7 @@ router.get('/courses/lessons',auth,async(req,res)=>{
         if(!course){
             return res.status(404).send('can not find the course')
         }
+        if(req.user.role === 'instructor' && req.user._id.toString() == course.instructor_id){
         const lessons  =  []
         if(!course.lessons){
             return res.status(404).send('can not find the lessons')
@@ -455,6 +471,10 @@ router.get('/courses/lessons',auth,async(req,res)=>{
         })
         
         res.send(lessons)
+    }
+    else{
+        res.status(403).send('unauthorized')
+    }
 
     }catch(e){
         res.status(500).send(e.message)
@@ -465,12 +485,20 @@ router.get('/courses/lessons',auth,async(req,res)=>{
 //a student uploads an assignment 
 router.post('/courses/course/assignmentUpload',auth,upload.single('upload'),async (req,res)=>{
     try{
-        if(req.user.role === 'student'){
-            const course = await Course.findById(req.body.course_id)
+        const course = await Course.findOne({
+            code : req.body.course_code
+        })
+        const enroll = await Enroll.findOne({
+            course_id : course._id,
+            user_id : req.user._id
+
+        })
+        if(enroll){
+           
             const assignment = new Assignment({
                 title : req.body.title,
                 fileName : req.file.filename,
-                courseCode : req.body.courseCode,
+                courseCode : req.body.course_code,
                 studentCode : req.user.code,
                 studentName : req.user.name
             })
@@ -478,7 +506,7 @@ router.post('/courses/course/assignmentUpload',auth,upload.single('upload'),asyn
             res.status(200).send('successfully uploaded ')
 
         }else{
-            res.status(403).send(unauthorized)
+            res.status(403).send('unauthorized')
         }
 
     }catch(e){
@@ -486,18 +514,27 @@ router.post('/courses/course/assignmentUpload',auth,upload.single('upload'),asyn
     }
 })
 //======================================================================================================================================
-//get an assignment of a students of a certain course
+//get an assignments  of a certain course
 router.get('/courses/course/assignments/assignment',auth,async (req,res)=>{
     try{
-        if(req.user.role === 'instructor'){
-            const assignment = await Assignment.findOne({_id  : req.body._id })
-            if(!assignment){
+        const course = await Course.findOne({
+            code : req.body.course_code
+        })
+        if(req.user._id.toString() == course.instructor_id ){
+            const assignments = await Assignment.find({title : req.body.title })
+            if(assignments.length === 0 ){
                 return res.status(404).send('can not find the assignment ')
             }
-            const path = "uploads/"+ assignment.fileName
-            // const send_file = fs.readFileSync(path)
-            
-            res.download(path)
+            // const path = "uploads/"+ assignment.fileName
+            // res.download(path)
+            const zipAssignments = []
+            assignments.forEach((assignment)=>{
+                zipAssignments.push({
+                    path : 'uploads/' + assignment.fileName,
+                    name : assignment.fileName
+                })
+            })
+            res.zip(zipAssignments)
         }
         else{
             res.status(403).send('unauthorized')
@@ -508,11 +545,15 @@ router.get('/courses/course/assignments/assignment',auth,async (req,res)=>{
 
     }
 })
+
 //======================================================================================================================================
 //get all the assignment titles
 router.get('/courses/course/assignments',auth,async(req,res)=>{
     try{
-        if(req.user.role === 'instructor'){
+        const course = await Course.findOne({
+            code : req.body.course_code
+        })
+        if(req.user._id.toString() == course.instructor_id){
             const assignments = await Assignment.find({title : req.body.title})
             if(assignments.length === 0 ){
                 return res.status(404).send('there are no assignments ')
