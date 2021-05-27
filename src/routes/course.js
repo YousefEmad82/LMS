@@ -14,7 +14,7 @@ const Assignment = require('../database/models/assignment')
 const zip = require('express-zip')
 require('../database/mongoose')
 
-
+//the setup of the file upload of the lessons and assignments 
 //======================================================================================================================================
 var storage = multer.diskStorage({  //uploads of lessons and assignments
     destination: function (req, file, cb) {
@@ -37,7 +37,7 @@ const upload = multer({ //uploads of lessons and assignments
         callback(undefined,true)
     }, 
 })
-
+//======================================================================================================================================
 
 
 
@@ -91,6 +91,13 @@ router.post('/admins/enroll',auth,async(req,res)=>{
             if(!course){
                 return res.status(404).send("please enter the course's code correctly!")
             }
+            const searchEnroll = await Enroll.findOne({
+                course_id : course._id,
+                user_id : student._id,
+            })
+            if(!searchEnroll){
+                
+            
             const enroll = new Enroll({
                 user_id : student._id,
                 course_id : course._id
@@ -98,11 +105,13 @@ router.post('/admins/enroll',auth,async(req,res)=>{
             await enroll.save()
             await enroll.populate('user_id').populate('course_id').execPopulate()
             
-            res.status(201).send({
+            return res.status(201).send({
                 student_name : enroll.user_id.name,
                 course_name : enroll.course_id.name,
                 status : 'sucessfully enrolled'})
-    }
+            }
+            res.send('the student is already enrolled')
+        }
     else{
         res.status(403).send('unauthorized')
     }
@@ -570,5 +579,40 @@ router.get('/courses/course/assignments',auth,async(req,res)=>{
     }
 })
 //======================================================================================================================================
+//admin get courses by year
+router.get('/admins/courses/year',auth,async (req,res)=>{
+    try{
+        if(req.user.role === 'admin'){
+        const courses = await Course.find({
+            year : req.body.year
+        })
+        if(courses.length === 0 ){
+            return res.status(404).send('ther are no courses')
+        }
+        res.status(200).send(courses)
+        }
+        else{
+            res.status(403).send('unauthorized')
+        }
+    }catch(e){
+        res.status(500).send(e.message)
+    }
+})
+//======================================================================================================================================
+//admin lists admins
+router.get('/admins/getAdmins',auth,async(req,res)=>{
+    try{
+        if(req.user.role === 'admin'){
+            const admins = await User.find({role : 'admin'})
+            res.status(200).send(admins)
 
+        }else{
+            res.status(403).send('unauthorized')
+        }
+
+    }catch(e){
+        res.status(500).send(e.message)
+
+    }
+})
 module.exports = router
