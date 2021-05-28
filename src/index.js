@@ -3,6 +3,7 @@ const express = require('express')
 const app = express()
 const userRouter = require('./routes/user')
 const courseRouter = require('./routes/course')
+const quizRouter = require('./routes/quiz')
 const fs = require('fs')
 
 
@@ -15,6 +16,7 @@ app.use(express.json({extended: true}))
 app.use(express.urlencoded({extended: true}))
 app.use(userRouter)
 app.use(courseRouter)
+app.use(quizRouter)
 
 
 
