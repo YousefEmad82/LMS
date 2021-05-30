@@ -610,5 +610,22 @@ router.get('/admins/courses/year/:year',auth,async (req,res)=>{
     }
 })
 //======================================================================================================================================
-
+//admin get courses 
+router.get('/admins/courses',auth,async (req,res)=>{
+    try{
+        if(req.user.role === 'admin'){
+        const courses = await Course.find()
+        if(courses.length === 0 ){
+            return res.status(404).send('ther are no courses')
+        }
+        res.status(200).send(courses)
+        }
+        else{
+            res.status(403).send('unauthorized')
+        }
+    }catch(e){
+        res.status(500).send(e.message)
+    }
+})
+//======================================================================================================================================
 module.exports = router
