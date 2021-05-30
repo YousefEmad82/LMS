@@ -167,12 +167,12 @@ router.get('/admins/getAllStudents',auth,async(req,res)=>{
 //======================================================================================================================================
 //the year is from the query year = ay haga
 //list students of certain year
-router.get('/admins/getStudentsOfCertainYear',auth,async(req,res)=>{
+router.get('/admins/getStudentsOfCertainYear/:year',auth,async(req,res)=>{
     try{
         if(req.user.role === 'admin' ){
             const students = await User.find({
                 role : 'student',
-                year : req.query.year
+                year : req.params.year
             })
             if(students.length === 0){
                 return res.status(404).send('can not find the students')
@@ -323,10 +323,10 @@ router.delete('/admins/deleteUser',auth,async(req,res)=>{
 })
 //======================================================================================================================================
 //admin get a student by its code  *********************
-router.get('/students/student',auth,async(req,res)=>{
+router.get('/students/student/:code',auth,async(req,res)=>{
     try{
         if(req.user.role != 'students'){
-            const student = await User.findOne({code : req.body.code})
+            const student = await User.findOne({code : req.params.code})
             if(!student){
                 return res.status(404).send('can not find the student!')
             }
@@ -398,5 +398,21 @@ router.post('/usersAuto',auth,userUpload.single('upload'), async (req,res)=>{
     }
 })
 //======================================================================================================================================
+//admin lists admins
+router.get('/admins/getAdmins',auth,async(req,res)=>{
+    try{
+        if(req.user.role === 'admin'){
+            const admins = await User.find({role : 'admin'})
+            res.status(200).send(admins)
 
+        }else{
+            res.status(403).send('unauthorized')
+        }
+
+    }catch(e){
+        res.status(500).send(e.message)
+
+    }
+})
+//======================================================================================================================================
 module.exports = router

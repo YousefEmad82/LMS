@@ -160,11 +160,11 @@ router.post('/admins/enrollMultiple',auth,async(req,res)=>{
     }
 })
 //======================================================================================================================================
-//get the courses of a student
-router.get('/users/getEnrolledCourses',auth,async(req,res)=>{
+//gets the courses of a student
+router.get('/users/getEnrolledCourses/:code',auth,async(req,res)=>{
     try{
-        if(req.user.role === 'admin'){
-            const student = await User.findOne({code : req.body.code,role : 'student'})
+        if(req.user.role === 'admin' ){
+            const student = await User.findOne({code : req.params.code,role : 'student'})
             if(!student){
                 return res.status(404).send('please enter the correct code of the student!')
             }
@@ -238,9 +238,9 @@ router.get('/instructors/InstructorCourses',auth,async(req,res)=>{
 })
 //======================================================================================================================================
 //list students in a certain course that the instructor teach
-router.get('/instructors/InstructorCourses/course/studentsList',auth,async(req,res)=>{
+router.get('/instructors/InstructorCourses/course/studentsList/:code',auth,async(req,res)=>{
     try{
-        const course = await Course.findOne({code : req.body.code})
+        const course = await Course.findOne({code : req.params.code})
         if(!course){
             return res.status(404).send('please enter a correct code of your courses')
         }  
@@ -258,7 +258,7 @@ router.get('/instructors/InstructorCourses/course/studentsList',auth,async(req,r
                     students.push(studentDetails)
                 }))
                 if(students.length === 0){
-                    return res.status(404).send()
+                    return res.status(404).send('there are no students enrolled')
                 }
             res.send(students)
         }
@@ -271,9 +271,9 @@ router.get('/instructors/InstructorCourses/course/studentsList',auth,async(req,r
 })
 //======================================================================================================================================
 //the admin lists the students of a certain course
-router.get('/admins/courses/course/students',auth,async(req,res)=>{
+router.get('/admins/courses/course/students/:code',auth,async(req,res)=>{
     try{
-        const course = await Course.findOne({code : req.body.code})
+        const course = await Course.findOne({code : req.params.code})
         if(!course){
             return res.status(404).send('please enter a correct course code!')
         }  
@@ -292,7 +292,7 @@ router.get('/admins/courses/course/students',auth,async(req,res)=>{
                     students.push(studentDetails)
                 }))
                 if(students.length === 0){
-                    return res.status(404).send()
+                    return res.status(404).send('there are no students enrolled')
                 }
             res.send(students)
         }
@@ -307,11 +307,11 @@ router.get('/admins/courses/course/students',auth,async(req,res)=>{
 
 //======================================================================================================================================
 //admin lists the courses of an instructor
-router.get('/admins/InstructorCourses',auth,async(req,res)=>{
+router.get('/admins/InstructorCourses/:code',auth,async(req,res)=>{
     try{
         if(req.user.role === 'admin'){
             const instructor = await User.findOne({
-                code : req.body.code,     
+                code : req.params.code,     
             })
             if(!instructor || instructor.role != 'instructor'){
                 return res.status(404).send('please enter the correct code of the instructor!')
@@ -387,10 +387,10 @@ router.delete('/admins/courses/delete',auth,async(req,res)=>{
 })
 //======================================================================================================================================
 //get a course by  its code *********************
-router.get('/courses/course',auth,async(req,res)=>{
+router.get('/courses/course/:code',auth,async(req,res)=>{
     try{
         if(req.user.role === 'student' || req.user.role ==='instructor'){
-            const course = await Course.findOne({code : req.body.code})
+            const course = await Course.findOne({code : req.params.code})
             if(!course){
                 return res.status(404).send("can't find the course!")
             }
@@ -432,9 +432,9 @@ router.post('/courses/course/lessonsUpload',auth,upload.single('upload'),async (
 })
 //======================================================================================================================================
 //student download a lesson  
-router.get('/courses/lessons/lesson',auth,async(req,res)=>{
+router.get('/courses/lessons/lesson/:course_id/:lesson_title',auth,async(req,res)=>{
     try{
-        const course = await Course.findById({_id : req.body.course_id})
+        const course = await Course.findById({_id : req.params.course_id})
         if(!course){
             return res.status(404).send('can not find the course')
         }
@@ -445,7 +445,7 @@ router.get('/courses/lessons/lesson',auth,async(req,res)=>{
         })
         if(enroll){
         const lesson = course.lessons.find((lesson)=>{
-            return lesson.lesson_title === req.body.lesson_title
+            return lesson.lesson_title === req.params.lesson_title
         })
         if(!lesson){
             return res.status(404).send('can not find the lesson ')
@@ -463,13 +463,24 @@ router.get('/courses/lessons/lesson',auth,async(req,res)=>{
 })
 //======================================================================================================================================
 //get all the lessons titles
-router.get('/courses/lessons',auth,async(req,res)=>{
+router.get('/courses/lessons/:course_id',auth,async(req,res)=>{
     try{
-        const course = await Course.findById({_id : req.body.course_id})
+        let isEnrolled = false
+        const course = await Course.findById({_id : req.params.course_id})
         if(!course){
             return res.status(404).send('can not find the course')
         }
-        if(req.user.role === 'instructor' && req.user._id.toString() == course.instructor_id){
+        if(req.user.role === 'student'){
+            const enroll = await Enroll.findOne({
+                user_id : req.user._id,
+                course_id : course._id
+            })
+            if(!enroll){
+                return res.status(403).send('unauthorized')
+            }
+            isEnrolled = true
+        }
+        if( req.user._id.toString() == course.instructor_id || isEnrolled  ){
         const lessons  =  []
         if(!course.lessons){
             return res.status(404).send('can not find the lessons')
@@ -523,13 +534,13 @@ router.post('/courses/course/assignmentUpload',auth,upload.single('upload'),asyn
 })
 //======================================================================================================================================
 //get  assignments  of a certain course
-router.get('/courses/course/assignments/assignment',auth,async (req,res)=>{
+router.get('/courses/course/assignments/assignment/:course_code/:title',auth,async (req,res)=>{
     try{
         const course = await Course.findOne({
-            code : req.body.course_code
+            code : req.params.course_code
         })
         if(req.user._id.toString() == course.instructor_id ){
-            const assignments = await Assignment.find({title : req.body.title })
+            const assignments = await Assignment.find({title : req.params.title })
             if(assignments.length === 0 ){
                 return res.status(404).send('can not find the assignment ')
             }
@@ -556,13 +567,13 @@ router.get('/courses/course/assignments/assignment',auth,async (req,res)=>{
 
 //======================================================================================================================================
 //get all the assignment titles
-router.get('/courses/course/assignments',auth,async(req,res)=>{
+router.get('/courses/course/assignments/:course_code/:title',auth,async(req,res)=>{
     try{
         const course = await Course.findOne({
-            code : req.body.course_code
+            code : req.params.course_code
         })
         if(req.user._id.toString() == course.instructor_id){
-            const assignments = await Assignment.find({title : req.body.title})
+            const assignments = await Assignment.find({title : req.params.title})
             if(assignments.length === 0 ){
                 return res.status(404).send('there are no assignments ')
             }
@@ -580,11 +591,11 @@ router.get('/courses/course/assignments',auth,async(req,res)=>{
 })
 //======================================================================================================================================
 //admin get courses by year
-router.get('/admins/courses/year',auth,async (req,res)=>{
+router.get('/admins/courses/year/:year',auth,async (req,res)=>{
     try{
         if(req.user.role === 'admin'){
         const courses = await Course.find({
-            year : req.body.year
+            year : req.params.year
         })
         if(courses.length === 0 ){
             return res.status(404).send('ther are no courses')
@@ -599,20 +610,5 @@ router.get('/admins/courses/year',auth,async (req,res)=>{
     }
 })
 //======================================================================================================================================
-//admin lists admins
-router.get('/admins/getAdmins',auth,async(req,res)=>{
-    try{
-        if(req.user.role === 'admin'){
-            const admins = await User.find({role : 'admin'})
-            res.status(200).send(admins)
 
-        }else{
-            res.status(403).send('unauthorized')
-        }
-
-    }catch(e){
-        res.status(500).send(e.message)
-
-    }
-})
 module.exports = router
