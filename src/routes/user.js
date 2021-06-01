@@ -52,7 +52,7 @@ router.post('/users',async(req,res)=>{
         })
         await user.save()
         // const token = await user.generateAuthToken()
-        res.status(201).send(user)
+        return res.status(201).send(user)
 
         }
         else if(req.body.role === 'instructor'){
@@ -67,8 +67,7 @@ router.post('/users',async(req,res)=>{
         })
         await user.save()
         // const token = await user.generateAuthToken()
-
-
+        return res.status(201).send(user)
         }
         else{
             const {name,email,password,role,code}  = req.body
@@ -80,12 +79,9 @@ router.post('/users',async(req,res)=>{
             code,
         })
         await user.save()
-        // const token = await user.generateAuthToken()
-        console.log('rgkrg')
-
+        return res.status(201).send(user)
 
         }
-        res.status(201).send(user)
 
 
     }catch(e){
