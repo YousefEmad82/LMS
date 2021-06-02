@@ -443,7 +443,7 @@ router.get('/courses/lessons/lesson/:course_id/:lesson_title',auth,async(req,res
             user_id : req.user._id
 
         })
-        if(enroll){
+        if(enroll || req.user.role === 'instructor'){
         const lesson = course.lessons.find((lesson)=>{
             return lesson.lesson_title === req.params.lesson_title
         })
