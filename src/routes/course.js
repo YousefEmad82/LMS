@@ -64,7 +64,10 @@ router.post('/admins/addCourse',auth,async(req,res)=>{
             })
             
             await course.save()
-            res.status(201).send(course)
+            res.status(201).send({
+                course : course,
+                instructor_name : instructor.name
+            })
 
         }
         else{
@@ -163,6 +166,7 @@ router.post('/admins/enrollMultiple',auth,async(req,res)=>{
 //gets the courses of a student
 router.get('/users/getEnrolledCourses/:code',auth,async(req,res)=>{
     try{
+        let instructor
         if(req.user.role === 'admin' ){
             const student = await User.findOne({code : req.params.code,role : 'student'})
             if(!student){
@@ -175,9 +179,11 @@ router.get('/users/getEnrolledCourses/:code',auth,async(req,res)=>{
                 await Promise.all(student.student_courses.map(async(course)=>{
 
                     course = await Course.findById(course.course_id)
+                    instructor = await User.findById(course.instructor_id)
                     courseDetails = {
                         course_name : course.name,
                         course_code : course.code,
+                        instructor_name : instructor.name,
                     }
                     courses.push(courseDetails)
                 }))
@@ -187,7 +193,7 @@ router.get('/users/getEnrolledCourses/:code',auth,async(req,res)=>{
 
                 return res.send(courses)
         }
-        else if(req.user.role === 'student'){
+        else if(req.user.role === 'student' ){
             await req.user.populate('student_courses').execPopulate()
             let courses =[]
             let courseDetails = {}
@@ -195,9 +201,12 @@ router.get('/users/getEnrolledCourses/:code',auth,async(req,res)=>{
                 await Promise.all(req.user.student_courses.map(async(course)=>{
 
                     course = await Course.findById(course.course_id)
+                    instructor = await User.findById(course.instructor_id)
+
                     courseDetails = {
                         course_name : course.name,
                         course_code : course.code,
+                        instructor_name : instructor.name,
                     }
                     courses.push(courseDetails)
                 }))
