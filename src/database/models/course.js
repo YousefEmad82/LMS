@@ -60,6 +60,13 @@ courseSchema.virtual('students',{
     foreignField : 'course_id'
 })
 
+courseSchema.virtual('instructor',{
+    ref : 'User',
+    localField : 'instructor_id',
+    foreignField : '_id'
+})
+
+
 
 
 

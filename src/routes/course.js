@@ -403,7 +403,11 @@ router.get('/courses/course/:code',auth,async(req,res)=>{
             if(!course){
                 return res.status(404).send("can't find the course!")
             }
-            res.send(course )//course.overview
+            await course.populate('instructor').execPopulate()
+            res.send({
+                course : course,
+                instructor_name : course.instructor[0].name
+            })//course.overview
         }
         else{
             res.status(403).send('unauthorized')
@@ -599,6 +603,34 @@ router.get('/courses/course/assignments/:course_code/:title',auth,async(req,res)
     }
 })
 //======================================================================================================================================
+//student get his assignments of a certain course
+router.get('/courses/course/assignments/:course_id',auth,async(req,res)=>{
+    try{
+        const course = await Course.findById(req.params.course_id)
+        if(!course){
+            return res.status(404).send('the course is not available')
+        }
+        const enroll = await Enroll.findOne({
+            course_id : req.params.course_id,
+            user_id : req.user._id
+        })
+        if(!enroll){
+            return res.status(403).send('unauthorized')
+        }
+        const assignments = await Assignment.find({
+            courseCode : course.code,
+            studentCode : req.user.code
+        })
+        
+        if(assignments.length == 0){
+            return res.status(404).send('you do not have any assignments uploaded')
+        }
+        res.status(200).send(assignments)
+
+    }catch(e){
+        res.status(500).send(e.message)
+    }
+})
 //admin get courses by year
 router.get('/admins/courses/year/:year',auth,async (req,res)=>{
     try{
