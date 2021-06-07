@@ -631,6 +631,37 @@ router.get('/courses/course/assignments/:course_id',auth,async(req,res)=>{
         res.status(500).send(e.message)
     }
 })
+//======================================================================================================================================
+//student download an assignment
+router.get('/courses/course/assignments/myAssignment/:course_id/:title',auth,async(req,res)=>{
+    try{ 
+            const course = await Course.findById(req.params.course_id)
+            if(!course){
+                return res.status(404).send('the course is not available')
+            }
+            const enroll = await Enroll.findOne({
+                course_id : req.params.course_id,
+                user_id : req.user._id
+            })
+            if(!enroll){
+                return res.status(403).send('unauthorized')
+            }
+            const assignment = await Assignment.findOne({
+                courseCode : course.code,
+                studentCode : req.user.code,
+                title : req.params.title
+            })
+            if(!assignment){
+                return res.status(404).send('couldnt find the assignment ')
+            }
+            const path = 'uploads/'+ assignment.fileName
+            console.log(path)
+            res.download(path)
+    }catch(e){
+        res.status(500).send(e.message)
+    }
+})
+//======================================================================================================================================
 //admin get courses by year
 router.get('/admins/courses/year/:year',auth,async (req,res)=>{
     try{
