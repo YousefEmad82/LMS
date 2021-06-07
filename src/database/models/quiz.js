@@ -20,35 +20,34 @@ const QuizSchema = new mongoose.Schema({
     questions:[{
         question :{
             type:String,
-            required:true
+            required:true,
+            trim:true
         },
         answer:{
             type:String,
-            required:true
+            required:true,
+            trim:true
         },
         choices:[{
             type:String,
-            required:true
+            required:true,
+            trim:true
         }
         ]
     }
         
     ],
-    id: {
-        type:Number,
-        unique:true,
-        required:true
-        
-    },
-    course_id : {
+    course_code : {
         type : String,
         required : true,
     },
-    instructor_id : {
+    instructor_code : {
         type : String,
         required : true,
-
-    },
+    }
+  
    
 })
+
+
 module.exports = mongoose.model('Quiz', QuizSchema)
