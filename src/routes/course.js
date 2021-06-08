@@ -547,42 +547,12 @@ router.post('/courses/course/assignmentUpload',auth,upload.single('upload'),asyn
 })
 //======================================================================================================================================
 //get  assignments  of a certain course
-// router.get('/courses/course/assignments/assignment/:course_code/:title',auth,async (req,res)=>{
-//     try{
-//         const course = await Course.findOne({
-//             code : req.params.course_code
-//         })
-//         if(req.user._id.toString() == course.instructor_id ){
-//             const assignments = await Assignment.find({title : req.params.title })
-//             if(assignments.length === 0 ){
-//                 return res.status(404).send('can not find the assignment ')
-//             }
-//             // const path = "uploads/"+ assignment.fileName
-//             // res.download(path)
-//             const zipAssignments = []
-//             assignments.forEach((assignment)=>{
-//                 zipAssignments.push({
-//                     path : 'uploads/' + assignment.fileName,
-//                     name : assignment.fileName
-//                 })
-//             })
-//             res.zip(zipAssignments)
-//         }
-//         else{
-//             res.status(403).send('unauthorized')
-//         }
-
-//     }catch(e){
-//         res.status(500).send(e.message)
-
-//     }
-// })
-router.get('/courses/course/assignments/assignment/:course_code/:title',async (req,res)=>{
+router.get('/courses/course/assignments/assignment/:course_code/:title',auth,async (req,res)=>{
     try{
         const course = await Course.findOne({
             code : req.params.course_code
         })
-       
+        if(req.user._id.toString() == course.instructor_id ){
             const assignments = await Assignment.find({title : req.params.title })
             if(assignments.length === 0 ){
                 return res.status(404).send('can not find the assignment ')
@@ -597,7 +567,10 @@ router.get('/courses/course/assignments/assignment/:course_code/:title',async (r
                 })
             })
             res.zip(zipAssignments)
-       
+        }
+        else{
+            res.status(403).send('unauthorized')
+        }
 
     }catch(e){
         res.status(500).send(e.message)
