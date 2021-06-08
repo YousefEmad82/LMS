@@ -45,7 +45,7 @@ router.post('/submit',auth,async (req, res) =>{
         const { quizID } = req.body
 
   
-        const answer = await Answer.create({
+        const answer = new  Answer({
             Answers,
             quizID,
             course_code,
@@ -72,7 +72,7 @@ router.post('/submit',auth,async (req, res) =>{
             })
 
         })
-        const totalscore =await  Score.create({
+        const totalscore = new Score({
                     quiz_id:quizID,
                     score:sum,
                     course_code : req.body.course_code,

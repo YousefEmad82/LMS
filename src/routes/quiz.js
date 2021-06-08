@@ -19,7 +19,6 @@ router.post('/create', auth,async (req, res) => {
         }
         
     
-        const { _id }=req.body
         const { title } = req.body
         const { total_marks } = req.body
         const { time } = req.body
@@ -28,8 +27,8 @@ router.post('/create', auth,async (req, res) => {
         const {instructor_code}  = req.body
         
 
-        const quiz = await Quiz.create({
-            _id,
+        const quiz = new Quiz({
+            
             title,
             time,
             total_marks,
@@ -104,7 +103,7 @@ router.delete('/delete/:id/:course_code',async (req,res)=>{
     }
 })
 
-//get course by title
+//get quiz by title
 router.get('/quizes/getQuiz/:title/:course_code',auth,async(req,res)=>{
     try{
         const course = await Course.findOne({code : req.params.course_code}   )
