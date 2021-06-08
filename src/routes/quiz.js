@@ -37,6 +37,7 @@ router.post('/create', auth,async (req, res) => {
             instructor_code,
             
         })
+        await quiz.save()
 
         return res.status(201).json(quiz)
     } catch (error) {
@@ -102,6 +103,31 @@ router.delete('/delete/:id/:course_code',async (req,res)=>{
 
     }
 })
+
+
+//get list of quizzes in a course
+router.get('/quizes/getQuizTitles/:course_code',auth,async(req,res)=>{
+    try{
+        const course = await Course.findOne({code : req.params.course_code}   )
+        if(!course){
+            return res.status(404).send('can not find the course')
+        }
+        if(course.instructor_id != req.user._id.toString()){
+            return res.status(403).send('unauthorized')
+        }
+        const quizzes = await Quiz.find({
+            course_code : req.params.course_code
+        })
+        if(quizzes.length === 0){
+            return res.status(404).send('there are no quizzes')
+        }
+        res.status(200).send(quizzes)
+    }catch(e){
+        res.status(500).send(e.message)
+    }
+
+})
+
 
 //get quiz by title
 router.get('/quizes/getQuiz/:title/:course_code',auth,async(req,res)=>{

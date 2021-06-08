@@ -51,6 +51,7 @@ router.post('/submit',auth,async (req, res) =>{
             course_code,
             student_code : req.user.code
         })
+        await answer.save()
 
 
 
@@ -146,12 +147,13 @@ router.patch('/editAnswer/:course_code',auth,async (req,res)=>{
             })
 
         })
-        const totalscore =await  Score.create({
+        const totalscore = new Score({
                     quiz_id:quizID,
                     score:sum,
                     course_code : req.params.course_code,
                     student_code : req.user.code
                 })
+        await totalscore.save()
         
         
      
