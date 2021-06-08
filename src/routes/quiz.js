@@ -112,8 +112,19 @@ router.get('/quizes/getQuizTitles/:course_code',auth,async(req,res)=>{
         if(!course){
             return res.status(404).send('can not find the course')
         }
+        if(req.user.role === 'instructor'){
         if(course.instructor_id != req.user._id.toString()){
             return res.status(403).send('unauthorized')
+        }
+        }
+        if(req.user.role === 'student'){
+            const enroll = await Enroll.findOne({
+                user_id  : req.user._id,
+                course_id : course._id
+            })
+            if(!enroll){
+                return res.status(403).send('unauthorized')
+            }
         }
         const quizzes = await Quiz.find({
             course_code : req.params.course_code
