@@ -12,6 +12,7 @@
   "description": "",
   "dependencies": {
     "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
     "csvtojson": "^2.0.10",
     "express": "^4.17.1",
     "express-fileupload": "^1.2.1",
