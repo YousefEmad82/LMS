@@ -52,6 +52,19 @@ router.post('/users',async(req,res)=>{
             year,
         })
         await user.save()
+        const courses = await Course.find({
+            year : user.year
+        })
+        if(courses){
+            for(i=0;i<courses.length;i++){
+                const enroll = new Enroll({
+                    course_id : courses[i]._id,
+                    user_id : user._id
+                })
+                console.log(enroll)
+                await enroll.save()
+            }
+        }
         // const token = await user.generateAuthToken()
         return res.status(201).send(user)
 
@@ -345,12 +358,8 @@ router.post('/usersAuto',auth,userUpload.single('upload'), async (req,res)=>{
     try{
         if(req.user.role === 'admin'){
                     const users = await csvtojson().fromFile("./uploads/"+req.file.filename)
-                    if(users[0].role === 'student'){
-                        const courses = await Course.find({
-                            year : users[0].year
-                        })
-                        console.log(courses)
-                    }
+                    
+                   
                     const savingStatus =  await  Promise.allSettled(users.map(async(row)=>{
                     if(row.role === 'student'){
                         const user = new User({
@@ -362,20 +371,7 @@ router.post('/usersAuto',auth,userUpload.single('upload'), async (req,res)=>{
                             year : row.year,     
                         })
                         await  user.save()
-
-                        if(courses.length != 0){
-                            console.log('1')
-                            for( i =0;i<courses.length ;i++){
-                                const enroll = new Enroll({
-                                    course_id : courses[i]._id,
-                                    user_id : user._id
-                                })
-                                console.log(enroll)
-                                await enroll.save()
-                            }
-                        }
                       
-
                     }
                      else{
                         const user = new User({
