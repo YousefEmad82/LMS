@@ -6,6 +6,9 @@ const auth = require('../middlwares/auth')
 const multer = require('multer')
 const csvtojson = require('csvtojson')
 const Course = require('../database/models/course')
+const Answer = require('../database/models/answer')
+const Assignment = require('../database/models/assignment')
+const fs = require('fs')
 
 
 
@@ -66,7 +69,7 @@ router.post('/users',async(req,res)=>{
             }
         }
         // const token = await user.generateAuthToken()
-        return res.status(201).send(user)
+        return res.status(201).json(user)
 
         }
         else if(req.body.role === 'instructor'){
@@ -81,7 +84,7 @@ router.post('/users',async(req,res)=>{
         })
         await user.save()
         // const token = await user.generateAuthToken()
-        return res.status(201).send(user)
+        return res.status(201).json(user)
         }
         else{
             const {name,email,password,role,code}  = req.body
@@ -93,13 +96,13 @@ router.post('/users',async(req,res)=>{
             code,
         })
         await user.save()
-        return res.status(201).send(user)
+        return res.status(201).json(user)
 
         }
 
 
     }catch(e){
-        res.status(400).send(e.message)
+        res.status(400).json(e.message)
 
     }
 })
@@ -110,16 +113,16 @@ router.post('/users/login',async(req,res)=>{
     try{
     const user = await User.findByCredentials(req.body.email,req.body.password)
     const token = await user.generateAuthToken()
-    res.status(200).send({user,token})
+    res.status(200).json({user,token})
     }catch(e){
-        res.status(400).send(e.message)
+        res.status(400).json(e.message)
     }
 })
 
 //======================================================================================================================================
 //view your own profile
 router.get('/users/me',auth,async(req,res)=>{
-    res.send(req.user)
+    res.json(req.user)
 })
 
 //======================================================================================================================================
@@ -130,10 +133,10 @@ router.post('/users/logout',auth,async(req,res)=>{
             return token.token != req.token
         })
         await req.user.save()
-        res.send()
+        res.json()
 
     }catch(e){
-        res.status(500).send()
+        res.status(500).json()
 
     }
 })
@@ -144,10 +147,10 @@ router.post('/users/logoutAll',auth,async(req,res)=>{
     try{
         req.user.tokens = []
         await req.user.save()
-        res.send()
+        res.json()
 
     }catch(e){
-        res.status(500).send()
+        res.status(500).json()
 
     }
 })
@@ -159,17 +162,17 @@ router.get('/admins/getAllStudents',auth,async(req,res)=>{
         if(req.user.role === 'admin'){
             const students = await User.find({role : 'student'})
             if(students.length === 0){
-                return res.status(404).send()
+                return res.status(404).json()
             }
-            res.send(students)
+            res.json(students)
 
         }
         else{
-            res.status(403).send('unauthorized')
+            res.status(403).json('unauthorized')
         }
 
     }catch(e){
-        res.status(500).send(e)
+        res.status(500).json(e)
 
     }
 })
@@ -185,17 +188,17 @@ router.get('/admins/getStudentsOfCertainYear/:year',auth,async(req,res)=>{
                 year : req.params.year
             })
             if(students.length === 0){
-                return res.status(404).send('can not find the students')
+                return res.status(404).json('can not find the students')
             }
-            res.status(200).send(students)
+            res.status(200).json(students)
 
         }
         else{
-            res.status(403).send('unauthorized')
+            res.status(403).json('unauthorized')
         }
 
     }catch(e){
-        res.status(500).send()
+        res.status(500).json()
 
     }
 })
@@ -207,17 +210,17 @@ router.get('/admins/getAllInstructors',auth,async(req,res)=>{
         if(req.user.role === 'admin'){
             const instructors = await User.find({role : 'instructor'})
             if(instructors.length === 0){
-                return res.status(404).send()
+                return res.status(404).json()
             }
-            res.status(200).send(instructors)
+            res.status(200).json(instructors)
 
         }
         else{
-            res.status(403).send('unauthorized')
+            res.status(403).json('unauthorized')
         }
 
     }catch(e){
-        res.status(500).send(e)
+        res.status(500).json(e)
 
     }
 })
@@ -232,7 +235,7 @@ router.patch('/admins/users/update',auth,async(req,res)=>{
     })
 
     if(!isValidUpdate){
-        return res.status(400).send({error : 'invalid updates'})
+        return res.status(400).json({error : 'invalid updates'})
     }
     try{
         if(req.user.role === 'admin'){
@@ -241,25 +244,25 @@ router.patch('/admins/users/update',auth,async(req,res)=>{
                     delete req.body.confirmPassword //removing the second  password (confirmPassword property) from the request body
                 }
                 else{
-                    return res.send(' the two passwords dont match')
+                    return res.json(' the two passwords dont match')
                 }
             }
             const user =  await User.findOne({code : req.body.old_code})
             if(!user){
-                return res.status(404).send('please enter the right code of the user!')
+                return res.status(404).json('please enter the right code of the user!')
             }
             updates.forEach((update)=>{
                 user[update] = req.body[update]
                 user.markModified(update)  //to allow me save the changes in the database,so i can use the hashing algorithm
             })
             await user.save()
-            res.status(200).send(user)        
+            res.status(200).json(user)        
         }     
         else{
-            return res.status(403).send('unauthorized')
+            return res.status(403).json('unauthorized')
         }
     }catch(e){
-        res.status(500).send(e.message)
+        res.status(500).json(e.message)
     }
 })
 
@@ -275,20 +278,20 @@ router.patch('/users/me',auth,async(req,res)=>{
     })
 
     if(!isValidUpdate){
-        return res.status(400).send({error : 'invalid updates'})
+        return res.status(400).json({error : 'invalid updates'})
     }
     try{
         if(req.body.password === req.body.confirmPassword){
             req.user.password = req.body.password
             await req.user.save()
-            res.send(req.user)
+            res.json(req.user)
     }
     else{
-        res.status(400).send("the two passwords don't match ")
+        res.status(400).json("the two passwords don't match ")
     }
 
     }catch(e){
-        res.status(500).send()
+        res.status(500).json()
 
     }
 })
@@ -302,32 +305,38 @@ router.delete('/admins/deleteUser',auth,async(req,res)=>{
                 code : req.body.code
             })
             if(!user){
-                return res.status(404).send('please enter the right code of the user')
+                return res.status(404).json('please enter the right code of the user')
             }
             if(user.role === 'student'){
             const enrolls  = await Enroll.deleteMany({
                     user_id : user._id
                 })
+            const answers = await Answer.deleteMany({student_code : req.body.code})
+            const assignments = await Assignment.find({studentCode : req.body.code})
+            const assignmentsDeleted = await Assignment.deleteMany({studentCode : req.body.code})
+            for(let i=0;i<assignments.length;i++){
+                fs.unlinkSync("uploads/"+ assignments[i].fileName)
+            }
                 await User.findByIdAndDelete(user._id)
-                return res.send({user,enrolls})
+                return res.json({user,enrolls,assignmentsDeleted})
             }
             else if(user.role === 'admin'){
-                res.send('can not delete an admin!!!')
+                res.json('can not delete an admin!!!')
 
                 
             }
             else{
                 await User.findByIdAndDelete(user._id)
-                res.send(user)
+                res.json(user)
             }
         } 
         else{
-            return res.status(403).send('unauthorized')
+            return res.status(403).json('unauthorized')
 
         }
 
     }catch(e){
-        res.status(500).send(e.message)
+        res.status(500).json(e.message)
 
     }
 })
@@ -338,16 +347,91 @@ router.get('/students/student/:code',auth,async(req,res)=>{
         if(req.user.role != 'students'){
             const student = await User.findOne({code : req.params.code})
             if(!student){
-                return res.status(404).send('can not find the student!')
+                return res.status(404).json('can not find the student!')
             }
-            res.send(student)
+            res.json(student)
         }
         else{
-            res.status(403).send('unauthorized')
+            res.status(403).json('unauthorized')
         }
 
     }catch(e){
-        res.status(500).send(e.message)
+        res.status(500).json(e.message)
+
+    }
+})
+//======================================================================================================================================
+// //create users from file
+// router.post('/usersAuto',auth,userUpload.single('upload'), async (req,res)=>{
+//     const indicesOfFailedSaving = []
+//     try{
+//         if(req.user.role === 'admin'){
+//                     const users = await csvtojson().fromFile("./uploads/"+req.file.filename)
+                    
+                   
+//                     const savingStatus =  await  Promise.allSettled(users.map(async(row)=>{
+//                     if(row.role === 'student'){
+//                         const user = new User({
+//                             name : row.name,
+//                             email : row.email,
+//                             password : row.password,
+//                             role : row.role,
+//                             code : row.code,  
+//                             year : row.year,     
+//                         })
+//                         await  user.save()
+                      
+//                     }
+//                      else{
+//                         const user = new User({
+//                             name : row.name,
+//                             email : row.email,
+//                             password : row.password,
+//                             role : row.role,
+//                             code : row.code,   
+//                         }) 
+
+//                         await  user.save()
+
+//                      }
+//                 }))
+                
+//                 savingStatus.forEach((save,index)=>{
+//                     if(save.status != 'fulfilled'){
+//                         indicesOfFailedSaving.push(index+1)
+//                     }
+//                 })
+//                 if(indicesOfFailedSaving.length === 0){
+//                    return res.status(201).json('successfully created all the users') 
+//                 }
+//                 throw new Error('there was an error while creating the users in lines : ' + indicesOfFailedSaving)
+
+//         }
+//         else{
+//             res.status(403).json('unauthorized')
+//         } 
+//     }catch(e){
+//         res.status(500).json({
+
+//             error : e.message, 
+          
+//         })
+//     }
+// })
+//======================================================================================================================================
+//admin lists admins
+router.get('/admins/getAdmins',auth,async(req,res)=>{
+    try{
+        if(req.user.role === 'admin'){
+            const admins = await User.find({role : 'admin'})
+            res.status(200).json(admins)
+
+        }else{
+            res.status(403).json('unauthorized')
+        }
+
+    }catch(e){
+        res.status(500).json(e.message)
 
     }
 })
@@ -355,54 +439,72 @@ router.get('/students/student/:code',auth,async(req,res)=>{
 //create users from file
 router.post('/usersAuto',auth,userUpload.single('upload'), async (req,res)=>{
     const indicesOfFailedSaving = []
+    const savingStatus =[]
     try{
         if(req.user.role === 'admin'){
                     const users = await csvtojson().fromFile("./uploads/"+req.file.filename)
-                    
-                   
-                    const savingStatus =  await  Promise.allSettled(users.map(async(row)=>{
-                    if(row.role === 'student'){
+                   for(let i=0;i<users.length;i++){
+                    if(users[i].role === 'student'){
                         const user = new User({
-                            name : row.name,
-                            email : row.email,
-                            password : row.password,
-                            role : row.role,
-                            code : row.code,  
-                            year : row.year,     
+                            name : users[i].name,
+                            email : users[i].email,
+                            password : users[i].password,
+                            role : users[i].role,
+                            code : users[i].code,  
+                            year : users[i].year,     
                         })
+                        try{
                         await  user.save()
-                      
+                        savingStatus.push("created")
+                         const courses = await Course.find({
+                            year : user.year
+                        })
+                        if(courses){
+                            for(let j=0;j<courses.length;j++){
+                                const enroll = new Enroll({
+                                    course_id : courses[j]._id,
+                                    user_id : user._id
+                                })
+                                console.log(enroll)
+                                await enroll.save()
+                         } }
+                        }catch(err){
+                            savingStatus.push(err.message)
+                        }
                     }
                      else{
                         const user = new User({
-                            name : row.name,
-                            email : row.email,
-                            password : row.password,
-                            role : row.role,
-                            code : row.code,   
+                            name : users[i].name,
+                            email : users[i].email,
+                            password : users[i].password,
+                            role : users[i].role,
+                            code : users[i].code,   
                         }) 
-
-                        await  user.save()
-
+                        try{
+                            await  user.save()            
+                            savingStatus.push("created")
+                            }catch(err){
+                                savingStatus.push(err.message)
+                            }
                      }
-                }))
-                
+                    }
                 savingStatus.forEach((save,index)=>{
-                    if(save.status != 'fulfilled'){
+                    if(save != 'created'){
                         indicesOfFailedSaving.push(index+1)
                     }
                 })
                 if(indicesOfFailedSaving.length === 0){
-                   return res.status(201).send('successfully created all the users') 
+                   return res.status(201).json('successfully created all the users') 
                 }
+                console.log(savingStatus)
                 throw new Error('there was an error while creating the users in lines : ' + indicesOfFailedSaving)
 
         }
         else{
-            res.status(403).send('unauthorized')
+            res.status(403).json('unauthorized')
         } 
     }catch(e){
-        res.status(500).send({
+        res.status(500).json({
 
             error : e.message, 
           
@@ -410,21 +512,27 @@ router.post('/usersAuto',auth,userUpload.single('upload'), async (req,res)=>{
     }
 })
 //======================================================================================================================================
-//admin lists admins
-router.get('/admins/getAdmins',auth,async(req,res)=>{
+//delete enrollment of a student
+router.delete('/admins/students/deleteEnroll',auth, async(req,res)=>{
     try{
         if(req.user.role === 'admin'){
-            const admins = await User.find({role : 'admin'})
-            res.status(200).send(admins)
+            const enroll = await  Enroll.deleteOne({
+                user_id : req.body.user_id ,
+                course_id : req.body.course_id               
+            })
+            if(enroll.deletedCount === 0){
+                return res.status(404).json("couldnt find the enroll")
+            }
+            res.status(200).json(enroll)
 
         }else{
-            res.status(403).send('unauthorized')
+            res.status(403).json('unauthorized')
         }
 
     }catch(e){
-        res.status(500).send(e.message)
-
+        console.log(e.message)
+        res.status(500).json(e.message)
     }
 })
-//======================================================================================================================================
+
 module.exports = router

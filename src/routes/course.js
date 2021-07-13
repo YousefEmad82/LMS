@@ -184,6 +184,7 @@ router.get('/users/getEnrolledCourses/:code',auth,async(req,res)=>{
                         course_name : course.name,
                         course_code : course.code,
                         instructor_name : instructor.name,
+                        course_id : course._id
                     }
                     courses.push(courseDetails)
                 }))
@@ -207,6 +208,8 @@ router.get('/users/getEnrolledCourses/:code',auth,async(req,res)=>{
                         course_name : course.name,
                         course_code : course.code,
                         instructor_name : instructor.name,
+                        course_id : course._id
+
                     }
                     courses.push(courseDetails)
                 }))

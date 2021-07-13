@@ -30,7 +30,7 @@ router.post('/submit',auth,async (req, res) =>{
     try {
         const course = await Course.findOne({code : req.body.course_code}   )
         if(!course){
-            return res.status(404).send('can not find the course')
+            return res.status(404).json('can not find the course')
         }
         const enroll = await Enroll.findOne({
             user_id  : req.user._id,
@@ -38,7 +38,7 @@ router.post('/submit',auth,async (req, res) =>{
         })
         
         if(!enroll){
-            return res.status(403).send('unauthorized')
+            return res.status(403).json('unauthorized')
         }
         const {course_code} = req.body
         const { Answers } = req.body
@@ -85,14 +85,14 @@ router.post('/submit',auth,async (req, res) =>{
        
         
         
-         res.status(201).send(totalscore)
+         res.status(201).json(totalscore)
 
     } catch (error) {
-         res.status(500).send(error.message)
+         res.status(500).json(error.message)
          
     }
 })
-//edit answers and send the total score
+//edit answers and json the total score
 router.patch('/editAnswer/:course_code',auth,async (req,res)=>{
     
     const updates = Object.keys(req.body)
@@ -100,7 +100,7 @@ router.patch('/editAnswer/:course_code',auth,async (req,res)=>{
     const isValidOperation = updates.every((update)=> allowedUpdates.includes(update))
 
     if(!isValidOperation){
-        return res.status(400).send({error : 'Invalid updates'})
+        return res.status(400).json({error : 'Invalid updates'})
     }
     const {quizID }= req.body
     const{ Answers }=req.body
@@ -115,14 +115,14 @@ router.patch('/editAnswer/:course_code',auth,async (req,res)=>{
     try{
         const course = await Course.findOne({code : req.params.course_code}   )
         if(!course){
-            return res.status(404).send('can not find the course')
+            return res.status(404).json('can not find the course')
         }
         const enroll = await Enroll.findOne({
             user_id  : req.user._id,
             course_id : course._id
         })
         if(!enroll){
-            return res.status(403).send('unauthorized')
+            return res.status(403).json('unauthorized')
         }
         const answer = await Answer.findOne({quizID})
         
@@ -159,14 +159,14 @@ router.patch('/editAnswer/:course_code',auth,async (req,res)=>{
      
 
         if(!answer){
-            return res.status(404).send()
+            return res.status(404).json()
         }
 
-        res.status(201).send(totalscore)
+        res.status(201).json(totalscore)
 
 
     }catch(e){
-        res.status(400).send(e)
+        res.status(400).json(e)
 
     }
 })

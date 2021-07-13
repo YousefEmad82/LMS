@@ -12,10 +12,10 @@ router.post('/create', auth,async (req, res) => {
     try {
         const course = await Course.findOne({code : req.body.course_code}   )
         if(!course){
-            return res.status(404).send('can not find the course')
+            return res.status(404).json('can not find the course')
         }
         if(course.instructor_id != req.user._id.toString()){
-            return res.status(403).send('unauthorized')
+            return res.status(403).json('unauthorized')
         }
         
     
@@ -52,17 +52,17 @@ router.post('/create', auth,async (req, res) => {
     const isValidOperation = updates.every((update)=> allowedUpdates.includes(update))
 
     if(!isValidOperation){
-        return res.status(400).send({error : 'Invalid updates'})
+        return res.status(400).json({error : 'Invalid updates'})
     }
     const _id = req.params.id
 
     try{
         const course = await Course.findOne({code : req.params.course_code}   )
         if(!course){
-            return res.status(404).send('can not find the course')
+            return res.status(404).json('can not find the course')
         }
         if(course.instructor_id != req.user._id.toString()){
-            return res.status(403).send('unauthorized')
+            return res.status(403).json('unauthorized')
         }
         const quiz = await Quiz.findOne({_id})
         
@@ -70,13 +70,13 @@ router.post('/create', auth,async (req, res) => {
         await quiz.save()
 
         if(!quiz){
-            return res.status(404).send()
+            return res.status(404).json()
         }
-        res.send(quiz)
+        res.json(quiz)
 
 
     }catch(e){
-        res.status(400).send(e.message)
+        res.status(400).json(e.message)
 
     }
 })
@@ -86,20 +86,20 @@ router.delete('/delete/:id/:course_code',async (req,res)=>{
     try{
         const course = await Course.findOne({code : req.params.course_code}   )
         if(!course){
-            return res.status(404).send('can not find the course')
+            return res.status(404).json('can not find the course')
         }
         if(course.instructor_id != req.user._id.toString()){
-            return res.status(403).send('unauthorized')
+            return res.status(403).json('unauthorized')
         }
         const quiz = await Quiz.findOneAndDelete(_id)
         if(!quiz){
-            res.status(404).send()
+            res.status(404).json()
         }
-        res.send()
+        res.json()
         
 
     }catch(e){
-        res.status(500).send(e)
+        res.status(500).json(e)
 
     }
 })
@@ -110,11 +110,11 @@ router.get('/quizes/getQuizTitles/:course_code',auth,async(req,res)=>{
     try{
         const course = await Course.findOne({code : req.params.course_code}   )
         if(!course){
-            return res.status(404).send('can not find the course')
+            return res.status(404).json('can not find the course')
         }
         if(req.user.role === 'instructor'){
         if(course.instructor_id != req.user._id.toString()){
-            return res.status(403).send('unauthorized')
+            return res.status(403).json('unauthorized')
         }
         }
         if(req.user.role === 'student'){
@@ -123,18 +123,18 @@ router.get('/quizes/getQuizTitles/:course_code',auth,async(req,res)=>{
                 course_id : course._id
             })
             if(!enroll){
-                return res.status(403).send('unauthorized')
+                return res.status(403).json('unauthorized')
             }
         }
         const quizzes = await Quiz.find({
             course_code : req.params.course_code
         })
         if(quizzes.length === 0){
-            return res.status(404).send('there are no quizzes')
+            return res.status(404).json('there are no quizzes')
         }
-        res.status(200).send(quizzes)
+        res.status(200).json(quizzes)
     }catch(e){
-        res.status(500).send(e.message)
+        res.status(500).json(e.message)
     }
 
 })
@@ -145,7 +145,7 @@ router.get('/quizes/getQuiz/:title/:course_code',auth,async(req,res)=>{
     try{
         const course = await Course.findOne({code : req.params.course_code}   )
         if(!course){
-            return res.status(404).send('can not find the course')
+            return res.status(404).json('can not find the course')
         }
         if(req.user.role === 'student'){
         const enroll = await Enroll.findOne({
@@ -154,11 +154,11 @@ router.get('/quizes/getQuiz/:title/:course_code',auth,async(req,res)=>{
         })
         
         if(!enroll){
-            return res.status(403).send('unauthorized')
+            return res.status(403).json('unauthorized')
         }
     }else{
         if(req.user._id != course.instructor_id.toString()){
-            return res.status(403).send('unauthorized')
+            return res.status(403).json('unauthorized')
 
         }
     }
@@ -167,14 +167,14 @@ router.get('/quizes/getQuiz/:title/:course_code',auth,async(req,res)=>{
             course_code  : req.params.course_code
         })
         if(!quiz){
-            return res.status(404).send('can not find the quiz')
+            return res.status(404).json('can not find the quiz')
         }
-        res.status(200).send(quiz)
+        res.status(200).json(quiz)
 
        
 
     }catch(e){
-        res.status(500).send(e.message)
+        res.status(500).json(e.message)
     }
 })
 
