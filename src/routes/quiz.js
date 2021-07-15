@@ -4,7 +4,8 @@ const Quiz = require('../database/models/quiz')
 const Course = require('../database/models/course')
 const auth = require('../middlwares/auth')
 const Enroll = require('../database/models/enroll')
-
+const Score = require('../database/models/score')
+const mongoose = require('mongoose')
 
 //create quiz
 router.post('/create', auth,async (req, res) => {
@@ -176,6 +177,63 @@ router.get('/quizes/getQuiz/:title/:course_code',auth,async(req,res)=>{
     }catch(e){
         res.status(500).json(e.message)
     }
+})
+
+
+router.get('/quizes/getGrades/:course_code/:student_code',auth,async(req,res)=>{
+    const student_code=req.params.student_code
+    let quizzes = []
+    try{
+        const course = await Course.findOne({code : req.params.course_code}   )
+        if(!course){
+            return res.status(404).json('can not find the course')
+        }
+        if(req.user.role === 'instructor'){
+        if(course.instructor_id != req.user._id.toString()){
+            return res.status(403).json('unauthorized')
+        }
+        }
+        if(req.user.role === 'student'){
+            const enroll = await Enroll.findOne({
+                user_id  : req.user._id,
+                course_id : course._id
+            })
+            if(!enroll){
+                return res.status(403).json('unauthorized')
+            }
+        }
+        const quizzes_scores = await Score.find({
+            student_code ,
+            course_code  : req.params.course_code
+        })
+        
+
+        if(!quizzes_scores){
+            return res.status(404).json('can not find the quiz')
+        }
+
+        for(let i=0;i<quizzes_scores.length;i++){
+            const quiz = await Quiz.findOne({
+                _id :mongoose.Types.ObjectId(quizzes_scores[i].quiz_id)
+            })
+            if(quiz){
+            quizzes.push({
+                "quiz_id" : quizzes_scores[i].quiz_id,
+                "score" : quizzes_scores[i].score,
+                "student_code" : quizzes_scores[i].student_code,
+                "course_code" : quizzes_scores[i].course_code,
+                "title" : quiz.title
+
+            })
+            }
+        }
+
+        res.status(200).json(quizzes)
+    }catch(e){
+        
+        res.status(500).json(e.message)
+    }
+
 })
 
  

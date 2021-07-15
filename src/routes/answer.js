@@ -79,6 +79,7 @@ router.post('/submit',auth,async (req, res) =>{
                     course_code : req.body.course_code,
                     student_code : req.user.code
                 })
+                await totalscore.save()
         
         
      

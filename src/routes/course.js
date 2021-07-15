@@ -54,7 +54,7 @@ router.post('/admins/addCourse',auth,async(req,res)=>{
         if(req.user.role === 'admin'){
             const instructor = await User.findOne({code : req.body.instructor_code})
             if(!instructor){
-                 return res.status(404).send('please enter a correct instructor code!')
+                 return res.status(404).json('please enter a correct instructor code!')
             }
             const instructor_id = instructor._id
            
@@ -64,18 +64,18 @@ router.post('/admins/addCourse',auth,async(req,res)=>{
             })
             
             await course.save()
-            res.status(201).send({
+            res.status(201).json({
                 course : course,
                 instructor_name : instructor.name
             })
 
         }
         else{
-            res.status(403).send('unauthorized')
+            res.status(403).json('unauthorized')
         }
 
     }catch(e){
-        res.status(500).send(e.message)
+        res.status(500).json(e.message)
 
     }
 })
@@ -88,11 +88,11 @@ router.post('/admins/enroll',auth,async(req,res)=>{
             
             const student = await User.findOne({code : req.body.student_code,role :'student'})
             if(!student){
-                return res.status(404).send("please enter the student's code correctly!")
+                return res.status(404).json("please enter the student's code correctly!")
             }
             const course = await Course.findOne({code : req.body.course_code})
             if(!course){
-                return res.status(404).send("please enter the course's code correctly!")
+                return res.status(404).json("please enter the course's code correctly!")
             }
             const searchEnroll = await Enroll.findOne({
                 course_id : course._id,
@@ -108,18 +108,18 @@ router.post('/admins/enroll',auth,async(req,res)=>{
             await enroll.save()
             await enroll.populate('user_id').populate('course_id').execPopulate()
             
-            return res.status(201).send({
+            return res.status(201).json({
                 student_name : enroll.user_id.name,
                 course_name : enroll.course_id.name,
                 status : 'sucessfully enrolled'})
             }
-            res.send('the student is already enrolled')
+            res.json('the student is already enrolled')
         }
     else{
-        res.status(403).send('unauthorized')
+        res.status(403).json('unauthorized')
     }
     }catch(e){
-        res.status(500).send(e.message)
+        res.status(500).json(e.message)
     }
 })
 //======================================================================================================================================
@@ -129,14 +129,14 @@ router.post('/admins/enrollMultiple',auth,async(req,res)=>{
         if(req.user.role === 'admin'){
             const course = await Course.findOne({code : req.body.course_code})
             if(!course){
-                return res.status(404).send("please enter the course's code correctly!")
+                return res.status(404).json("please enter the course's code correctly!")
             }
             const students = await User.find({
                 role : 'student',
                 year : req.body.year
             })
             if(students.length === 0){
-                return res.status(404).send('there are no students in this year !')
+                return res.status(404).json('there are no students in this year !')
             }
             let i
             for(i=0;i<students.length;i++){
@@ -147,7 +147,7 @@ router.post('/admins/enrollMultiple',auth,async(req,res)=>{
                 await enroll.save()
 
             }
-            res.status(201).send({
+            res.status(201).json({
                 course_name : course.name,
                 year : req.body.year,
                 status : 'enrolled successfully'
@@ -155,11 +155,11 @@ router.post('/admins/enrollMultiple',auth,async(req,res)=>{
             })
         }
         else{
-            return res.status(403).send('unauthorized')
+            return res.status(403).json('unauthorized')
         }
 
     }catch(e){
-        res.status(500).send(e.message)
+        res.status(500).json(e.message)
     }
 })
 //======================================================================================================================================
@@ -170,7 +170,7 @@ router.get('/users/getEnrolledCourses/:code',auth,async(req,res)=>{
         if(req.user.role === 'admin' ){
             const student = await User.findOne({code : req.params.code,role : 'student'})
             if(!student){
-                return res.status(404).send('please enter the correct code of the student!')
+                return res.status(404).json('please enter the correct code of the student!')
             }
             await student.populate('student_courses').execPopulate()
             let courses =[]
@@ -189,10 +189,10 @@ router.get('/users/getEnrolledCourses/:code',auth,async(req,res)=>{
                     courses.push(courseDetails)
                 }))
                 if(courses.length ===0){
-                    return res.send('this student is not enrolled in any courses yet!')
+                    return res.json('this student is not enrolled in any courses yet!')
                 }
 
-                return res.send(courses)
+                return res.json(courses)
         }
         else if(req.user.role === 'student' ){
             await req.user.populate('student_courses').execPopulate()
@@ -214,17 +214,17 @@ router.get('/users/getEnrolledCourses/:code',auth,async(req,res)=>{
                     courses.push(courseDetails)
                 }))
                 if(courses.length ===0){
-                    return res.send('you are not  not enrolled in any courses yet!')
+                    return res.json('you are not  not enrolled in any courses yet!')
                 }
 
-                return res.send(courses)
+                return res.json(courses)
         }
         else{
-            return res.status(403).send('unauthorized')
+            return res.status(403).json('unauthorized')
         }
 
     }catch(e){
-        res.status(500).send(e.message)
+        res.status(500).json(e.message)
 
     }
 })
@@ -236,15 +236,15 @@ router.get('/instructors/InstructorCourses',auth,async(req,res)=>{
         if(req.user.role === 'instructor'){
         const instructor = await req.user.populate('instructor_courses').execPopulate()
         
-        res.send(instructor.instructor_courses)
+        res.json(instructor.instructor_courses)
         }
         else{
-            res.status(403).send('unauthorized')
+            res.status(403).json('unauthorized')
         }
 
 
     }catch(e){
-        res.status(500).send(e.message)
+        res.status(500).json(e.message)
 
     }
 })
@@ -254,7 +254,7 @@ router.get('/instructors/InstructorCourses/course/studentsList/:code',auth,async
     try{
         const course = await Course.findOne({code : req.params.code})
         if(!course){
-            return res.status(404).send('please enter a correct code of your courses')
+            return res.status(404).json('please enter a correct code of your courses')
         }  
         if(req.user.role === 'instructor' && JSON.stringify({_id : req.user._id}) === JSON.stringify({_id : course.instructor_id}) ){
             await course.populate('students').execPopulate()
@@ -270,15 +270,15 @@ router.get('/instructors/InstructorCourses/course/studentsList/:code',auth,async
                     students.push(studentDetails)
                 }))
                 if(students.length === 0){
-                    return res.status(404).send('there are no students enrolled')
+                    return res.status(404).json('there are no students enrolled')
                 }
-            res.send(students)
+            res.json(students)
         }
         else{
-            res.status(403).send('unauthorized')
+            res.status(403).json('unauthorized')
         }
     }catch(e){
-        res.status(500).send(e.message)
+        res.status(500).json(e.message)
     }
 })
 //======================================================================================================================================
@@ -287,7 +287,7 @@ router.get('/admins/courses/course/students/:code',auth,async(req,res)=>{
     try{
         const course = await Course.findOne({code : req.params.code})
         if(!course){
-            return res.status(404).send('please enter a correct course code!')
+            return res.status(404).json('please enter a correct course code!')
         }  
         if(req.user.role === 'admin' ){
             await course.populate('students').execPopulate()
@@ -300,19 +300,20 @@ router.get('/admins/courses/course/students/:code',auth,async(req,res)=>{
                         studentName : student.name,
                         studentCode : student.code,
                         year : student.year,
+                        studentID: student._id,
                     }
                     students.push(studentDetails)
                 }))
                 if(students.length === 0){
-                    return res.status(404).send('there are no students enrolled')
+                    return res.status(404).json('there are no students enrolled')
                 }
-            res.send(students)
+            res.json(students)
         }
         else{
-            res.status(403).send('unauthorized')
+            res.status(403).json('unauthorized')
         }
     }catch(e){
-        res.status(500).send(e.message)
+        res.status(500).json(e.message)
     }
 })
 
@@ -326,21 +327,21 @@ router.get('/admins/InstructorCourses/:code',auth,async(req,res)=>{
                 code : req.params.code,     
             })
             if(!instructor || instructor.role != 'instructor'){
-                return res.status(404).send('please enter the correct code of the instructor!')
+                return res.status(404).json('please enter the correct code of the instructor!')
             }
             await instructor.populate('instructor_courses').execPopulate()
             if(instructor.instructor_courses.length ===0){
-                return res.send('the instructor doest have any courses yet!')
+                return res.json('the instructor doest have any courses yet!')
             }
-            res.send(instructor.instructor_courses)
+            res.json(instructor.instructor_courses)
             }
             else{
-                res.status(403).send('unauthorized')
+                res.status(403).json('unauthorized')
             }
 
 
     }catch(e){
-        res.status(500).send(e.message)
+        res.status(500).json(e.message)
 
     }
 })
@@ -355,22 +356,22 @@ router.patch('/admins/courses/update',auth,async(req,res)=>{
             return validUpdates.includes(update)
         })
         if(!isValidUpdate){
-            return res.status(400).send({error : 'invalid updates'})
+            return res.status(400).json({error : 'invalid updates'})
         }
         if(req.user.role === 'admin'){
           
             const course = await Course.findOneAndUpdate({code : req.body.old_code},req.body,{new : true})
             if(!course){
-                return res.status(404).send('please enter the right code of the course!')
+                return res.status(404).json('please enter the right code of the course!')
             }
-            res.send(course)
+            res.json(course)
         }
         else{
-            res.status(403).send('unauthorized')
+            res.status(403).json('unauthorized')
         }
 
     }catch(e){
-        res.status(500).send(e.message)
+        res.status(500).json(e.message)
     }
 })
 //======================================================================================================================================
@@ -380,20 +381,20 @@ router.delete('/admins/courses/delete',auth,async(req,res)=>{
         if(req.user.role === 'admin'){
             let course =  await Course.findOne({code : req.body.code})
             if(!course){
-                return res.status(404).send('please enter the right code of the course!')
+                return res.status(404).json('please enter the right code of the course!')
             }
             const enrolls = await Enroll.deleteMany({
                 course_id : course._id
             })
             await Course.deleteOne({_id  : course._id})
-            res.send({course,enrolls,status : 'the course is deleted '})
+            res.json({course,enrolls,status : 'the course is deleted '})
         }
         else{
-            return res.status(403).send('unauthorized')
+            return res.status(403).json('unauthorized')
         }
 
     }catch(e){
-        res.status(500).send(e.message)
+        res.status(500).json(e.message)
 
     }
 })
@@ -404,20 +405,20 @@ router.get('/courses/course/:code',auth,async(req,res)=>{
         if(req.user.role === 'student' || req.user.role ==='instructor'){
             const course = await Course.findOne({code : req.params.code})
             if(!course){
-                return res.status(404).send("can't find the course!")
+                return res.status(404).json("can't find the course!")
             }
             await course.populate('instructor').execPopulate()
-            res.send({
+            res.json({
                 course : course,
                 instructor_name : course.instructor[0].name
             })//course.overview
         }
         else{
-            res.status(403).send('unauthorized')
+            res.status(403).json('unauthorized')
         }
 
     }catch(e){
-        res.status(500).send(e.message)
+        res.status(500).json(e.message)
     }
 })
 //======================================================================================================================================
@@ -427,7 +428,7 @@ router.post('/courses/course/lessonsUpload',auth,upload.single('upload'),async (
         const course = await Course.findById(req.body.course_id)
         if(req.user.role === 'instructor' && req.user._id.toString() == course.instructor_id){
             if(!course){
-                return res.status(404).send('can not find the course')
+                return res.status(404).json('can not find the course')
             }
             course.lessons = course.lessons.concat({
                 lesson_title : req.body.lesson_title,
@@ -436,14 +437,14 @@ router.post('/courses/course/lessonsUpload',auth,upload.single('upload'),async (
 
             })
             await course.save()
-            res.status(200).send('successfully uploaded ')
+            res.status(200).json('successfully uploaded ')
 
         }else{
-            res.status(403).send('unauthorized')
+            res.status(403).json('unauthorized')
         }
 
     }catch(e){
-        res.status(500).send(e.message)
+        res.status(500).json(e.message)
     }
 })
 //======================================================================================================================================
@@ -452,7 +453,7 @@ router.get('/courses/lessons/lesson/:course_id/:lesson_title',auth,async(req,res
     try{
         const course = await Course.findById({_id : req.params.course_id})
         if(!course){
-            return res.status(404).send('can not find the course')
+            return res.status(404).json('can not find the course')
         }
         const enroll = await Enroll.findOne({
             course_id : course._id,
@@ -464,16 +465,16 @@ router.get('/courses/lessons/lesson/:course_id/:lesson_title',auth,async(req,res
             return lesson.lesson_title === req.params.lesson_title
         })
         if(!lesson){
-            return res.status(404).send('can not find the lesson ')
+            return res.status(404).json('can not find the lesson ')
         }
         const path = 'uploads/' + lesson.lesson_name_filesystem
         res.download(path)
     }
     else{
-        res.status(403).send('unauthorized')
+        res.status(403).json('unauthorized')
     }
     }catch(e){
-        res.status(500).send(e.message)
+        res.status(500).json(e.message)
 
     }
 })
@@ -484,7 +485,7 @@ router.get('/courses/lessons/:course_id',auth,async(req,res)=>{
         let isEnrolled = false
         const course = await Course.findById({_id : req.params.course_id})
         if(!course){
-            return res.status(404).send('can not find the course')
+            return res.status(404).json('can not find the course')
         }
         if(req.user.role === 'student'){
             const enroll = await Enroll.findOne({
@@ -492,27 +493,27 @@ router.get('/courses/lessons/:course_id',auth,async(req,res)=>{
                 course_id : course._id
             })
             if(!enroll){
-                return res.status(403).send('unauthorized')
+                return res.status(403).json('unauthorized')
             }
             isEnrolled = true
         }
         if( req.user._id.toString() == course.instructor_id || isEnrolled  ){
         const lessons  =  []
         if(!course.lessons){
-            return res.status(404).send('can not find the lessons')
+            return res.status(404).json('can not find the lessons')
         }
         course.lessons.forEach((lesson)=>{
             lessons.push(lesson.lesson_title)
         })
         
-        res.send(lessons)
+        res.json(lessons)
     }
     else{
-        res.status(403).send('unauthorized')
+        res.status(403).json('unauthorized')
     }
 
     }catch(e){
-        res.status(500).send(e.message)
+        res.status(500).json(e.message)
     }
 })
 //======================================================================================================================================
@@ -538,14 +539,14 @@ router.post('/courses/course/assignmentUpload',auth,upload.single('upload'),asyn
                 studentName : req.user.name
             })
             await assignment.save()
-            res.status(200).send('successfully uploaded ')
+            res.status(200).json('successfully uploaded ')
 
         }else{
-            res.status(403).send('unauthorized')
+            res.status(403).json('unauthorized')
         }
 
     }catch(e){
-        res.status(500).send(e.message)
+        res.status(500).json(e.message)
     }
 })
 //======================================================================================================================================
@@ -558,7 +559,7 @@ router.get('/courses/course/assignments/assignment/:course_code/:title',auth,asy
         if(req.user._id.toString() == course.instructor_id ){
             const assignments = await Assignment.find({title : req.params.title })
             if(assignments.length === 0 ){
-                return res.status(404).send('can not find the assignment ')
+                return res.status(404).json('can not find the assignment ')
             }
             // const path = "uploads/"+ assignment.fileName
             // res.download(path)
@@ -572,18 +573,18 @@ router.get('/courses/course/assignments/assignment/:course_code/:title',auth,asy
             res.zip(zipAssignments)
         }
         else{
-            res.status(403).send('unauthorized')
+            res.status(403).json('unauthorized')
         }
 
     }catch(e){
-        res.status(500).send(e.message)
+        res.status(500).json(e.message)
 
     }
 })
 
 
 //======================================================================================================================================
-//get all the assignment titles
+//get all the assignment titles of a course of all students
 router.get('/courses/course/assignments/:course_code/:title',auth,async(req,res)=>{
     try{
         const course = await Course.findOne({
@@ -592,34 +593,57 @@ router.get('/courses/course/assignments/:course_code/:title',auth,async(req,res)
         if(req.user._id.toString() == course.instructor_id){
             const assignments = await Assignment.find({title : req.params.title})
             if(assignments.length === 0 ){
-                return res.status(404).send('there are no assignments ')
+                return res.status(404).json('there are no assignments ')
             }
-            res.send(assignments)
+            res.json(assignments)
             
         }
         else{
-            res.status(403).send('unauthorized')
+            res.status(403).json('unauthorized')
 
         }
 
     }catch(e){
-        res.status(500).send(e.message)
+        res.status(500).json(e.message)
     }
 })
 //======================================================================================================================================
+//get all the assignment titles of a course
+router.get('/courses/assignments/get_titles/:course_code',auth,async(req,res)=>{
+    try{
+        const course = await Course.findOne({
+            code : req.params.course_code
+        })
+        if(req.user._id.toString() == course.instructor_id){
+            const assignments = await Assignment.find({courseCode : req.params.course_code}).distinct('title')        
+            if(assignments.length === 0 ){
+                return res.status(404).json('there are no assignments ')
+            }
+            res.json(assignments)
+            
+        }
+        else{
+            res.status(403).json('unauthorized')
+        }
+    }catch(e){
+        res.status(500).json(e.message)
+    }
+})
+//======================================================================================================================================
+
 //student get his assignments of a certain course
 router.get('/courses/course/assignments/:course_id',auth,async(req,res)=>{
     try{
         const course = await Course.findById(req.params.course_id)
         if(!course){
-            return res.status(404).send('the course is not available')
+            return res.status(404).json('the course is not available')
         }
         const enroll = await Enroll.findOne({
             course_id : req.params.course_id,
             user_id : req.user._id
         })
         if(!enroll){
-            return res.status(403).send('unauthorized')
+            return res.status(403).json('unauthorized')
         }
         const assignments = await Assignment.find({
             courseCode : course.code,
@@ -627,12 +651,12 @@ router.get('/courses/course/assignments/:course_id',auth,async(req,res)=>{
         })
         
         if(assignments.length == 0){
-            return res.status(404).send('you do not have any assignments uploaded')
+            return res.status(404).json('you do not have any assignments uploaded')
         }
-        res.status(200).send(assignments)
+        res.status(200).json(assignments)
 
     }catch(e){
-        res.status(500).send(e.message)
+        res.status(500).json(e.message)
     }
 })
 //======================================================================================================================================
@@ -641,14 +665,14 @@ router.get('/courses/course/assignments/myAssignment/:course_id/:title',auth,asy
     try{ 
             const course = await Course.findById(req.params.course_id)
             if(!course){
-                return res.status(404).send('the course is not available')
+                return res.status(404).json('the course is not available')
             }
             const enroll = await Enroll.findOne({
                 course_id : req.params.course_id,
                 user_id : req.user._id
             })
             if(!enroll){
-                return res.status(403).send('unauthorized')
+                return res.status(403).json('unauthorized')
             }
             const assignment = await Assignment.findOne({
                 courseCode : course.code,
@@ -656,13 +680,13 @@ router.get('/courses/course/assignments/myAssignment/:course_id/:title',auth,asy
                 title : req.params.title
             })
             if(!assignment){
-                return res.status(404).send('couldnt find the assignment ')
+                return res.status(404).json('couldnt find the assignment ')
             }
             const path = 'uploads/'+ assignment.fileName
             console.log(path)
             res.download(path)
     }catch(e){
-        res.status(500).send(e.message)
+        res.status(500).json(e.message)
     }
 })
 //======================================================================================================================================
@@ -674,15 +698,15 @@ router.get('/admins/courses/year/:year',auth,async (req,res)=>{
             year : req.params.year
         })
         if(courses.length === 0 ){
-            return res.status(404).send('ther are no courses')
+            return res.status(404).json('ther are no courses')
         }
-        res.status(200).send(courses)
+        res.status(200).json(courses)
         }
         else{
-            res.status(403).send('unauthorized')
+            res.status(403).json('unauthorized')
         }
     }catch(e){
-        res.status(500).send(e.message)
+        res.status(500).json(e.message)
     }
 })
 //======================================================================================================================================
@@ -692,15 +716,15 @@ router.get('/admins/courses',auth,async (req,res)=>{
         if(req.user.role === 'admin'){
         const courses = await Course.find()
         if(courses.length === 0 ){
-            return res.status(404).send('ther are no courses')
+            return res.status(404).json('ther are no courses')
         }
-        res.status(200).send(courses)
+        res.status(200).json(courses)
         }
         else{
-            res.status(403).send('unauthorized')
+            res.status(403).json('unauthorized')
         }
     }catch(e){
-        res.status(500).send(e.message)
+        res.status(500).json(e.message)
     }
 })
 //======================================================================================================================================
@@ -709,15 +733,15 @@ router.get('/auth',auth,async(req,res)=>{
         
         const course = await Course.findOne({code : req.params.course_code}   )
         if(!course){
-            return res.status(404).send('can not find the course')
+            return res.status(404).json('can not find the course')
         }
         if(course.instructor_id != req.user._id.toString()){
-            return res.status(403).send('unauthorized')
+            return res.status(403).json('unauthorized')
         }
-        res.send('authorized')
+        res.json('authorized')
 
     }catch(e){
-        res.send('server error')
+        res.json('server error')
     }
 })
 module.exports = router

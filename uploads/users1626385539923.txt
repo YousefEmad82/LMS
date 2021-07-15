@@ -1,0 +1,11 @@
+name,email,password,code,role,year
+1,grrgvrgtg@gmail.com,12345678,fefer,student,fourth
+2,gyrgtg@gmail.com,12345678,feferer,student,fourth
+4,grrrggtg@gmail.com,12345678,ferfer,instructor,fourth
+5,grrgtrgg@gmail.com,12345678,fegfer,student,fourth
+
+
+
+
+
+

@@ -437,18 +437,19 @@ router.get('/admins/getAdmins',auth,async(req,res)=>{
 })
 //======================================================================================================================================
 //create users from file
-router.post('/usersAuto',auth,userUpload.single('upload'), async (req,res)=>{
+router.post('/usersAuto/:role',auth,userUpload.single('upload'), async (req,res)=>{
     const indicesOfFailedSaving = []
     const savingStatus =[]
     try{
         if(req.user.role === 'admin'){
                     const users = await csvtojson().fromFile("./uploads/"+req.file.filename)
                    for(let i=0;i<users.length;i++){
-                    if(users[i].role === 'student'){
+                    if(users[i].role === req.params.role){
+                        if(req.params.role === 'student'){
                         const user = new User({
                             name : users[i].name,
                             email : users[i].email,
-                            password : users[i].password,
+                            password : users[i].code,
                             role : users[i].role,
                             code : users[i].code,  
                             year : users[i].year,     
@@ -472,20 +473,24 @@ router.post('/usersAuto',auth,userUpload.single('upload'), async (req,res)=>{
                             savingStatus.push(err.message)
                         }
                     }
+                        else{
+                            const user = new User({
+                                name : users[i].name,
+                                email : users[i].email,
+                                password : users[i].code,
+                                role : users[i].role,
+                                code : users[i].code,   
+                            }) 
+                            try{
+                                await  user.save()            
+                                savingStatus.push("created")
+                                }catch(err){
+                                    savingStatus.push(err.message)
+                                }
+                        }
+                    }
                      else{
-                        const user = new User({
-                            name : users[i].name,
-                            email : users[i].email,
-                            password : users[i].password,
-                            role : users[i].role,
-                            code : users[i].code,   
-                        }) 
-                        try{
-                            await  user.save()            
-                            savingStatus.push("created")
-                            }catch(err){
-                                savingStatus.push(err.message)
-                            }
+                         savingStatus.push('error')
                      }
                     }
                 savingStatus.forEach((save,index)=>{
@@ -498,7 +503,6 @@ router.post('/usersAuto',auth,userUpload.single('upload'), async (req,res)=>{
                 }
                 console.log(savingStatus)
                 throw new Error('there was an error while creating the users in lines : ' + indicesOfFailedSaving)
-
         }
         else{
             res.status(403).json('unauthorized')
