@@ -189,10 +189,10 @@ router.get('/users/getEnrolledCourses/:code',auth,async(req,res)=>{
                     courses.push(courseDetails)
                 }))
                 if(courses.length ===0){
-                    return res.json('this student is not enrolled in any courses yet!')
+                    return res.status(404).json('this student is not enrolled in any courses yet!')
                 }
 
-                return res.json(courses)
+                return res.status(200).json(courses)
         }
         else if(req.user.role === 'student' ){
             await req.user.populate('student_courses').execPopulate()
@@ -214,10 +214,10 @@ router.get('/users/getEnrolledCourses/:code',auth,async(req,res)=>{
                     courses.push(courseDetails)
                 }))
                 if(courses.length ===0){
-                    return res.json('you are not  not enrolled in any courses yet!')
+                    return res.status(404).json('you are not  not enrolled in any courses yet!')
                 }
 
-                return res.json(courses)
+                return res.status(200).json(courses)
         }
         else{
             return res.status(403).json('unauthorized')
@@ -235,8 +235,11 @@ router.get('/instructors/InstructorCourses',auth,async(req,res)=>{
     try{
         if(req.user.role === 'instructor'){
         const instructor = await req.user.populate('instructor_courses').execPopulate()
+        if(!instructor){
+            res.status(404).json("you don't have any courses yet")
+        }
         
-        res.json(instructor.instructor_courses)
+        res.status(200).json(instructor.instructor_courses)
         }
         else{
             res.status(403).json('unauthorized')
@@ -272,7 +275,7 @@ router.get('/instructors/InstructorCourses/course/studentsList/:code',auth,async
                 if(students.length === 0){
                     return res.status(404).json('there are no students enrolled')
                 }
-            res.json(students)
+            res.status(200).json(students)
         }
         else{
             res.status(403).json('unauthorized')
@@ -307,7 +310,7 @@ router.get('/admins/courses/course/students/:code',auth,async(req,res)=>{
                 if(students.length === 0){
                     return res.status(404).json('there are no students enrolled')
                 }
-            res.json(students)
+            res.status(200).json(students)
         }
         else{
             res.status(403).json('unauthorized')
@@ -331,7 +334,7 @@ router.get('/admins/InstructorCourses/:code',auth,async(req,res)=>{
             }
             await instructor.populate('instructor_courses').execPopulate()
             if(instructor.instructor_courses.length ===0){
-                return res.json('the instructor doest have any courses yet!')
+                return res.status(404).json('the instructor does not have any courses yet!')
             }
             res.json(instructor.instructor_courses)
             }
@@ -356,7 +359,7 @@ router.patch('/admins/courses/update',auth,async(req,res)=>{
             return validUpdates.includes(update)
         })
         if(!isValidUpdate){
-            return res.status(400).json({error : 'invalid updates'})
+            return res.status(400).json( 'invalid updates')
         }
         if(req.user.role === 'admin'){
           
@@ -364,7 +367,7 @@ router.patch('/admins/courses/update',auth,async(req,res)=>{
             if(!course){
                 return res.status(404).json('please enter the right code of the course!')
             }
-            res.json(course)
+            res.status(200).json(course)
         }
         else{
             res.status(403).json('unauthorized')
@@ -387,7 +390,7 @@ router.delete('/admins/courses/delete',auth,async(req,res)=>{
                 course_id : course._id
             })
             await Course.deleteOne({_id  : course._id})
-            res.json({course,enrolls,status : 'the course is deleted '})
+            res.status(200).json({course,enrolls,status : 'the course is deleted '})
         }
         else{
             return res.status(403).json('unauthorized')
@@ -408,7 +411,7 @@ router.get('/courses/course/:code',auth,async(req,res)=>{
                 return res.status(404).json("can't find the course!")
             }
             await course.populate('instructor').execPopulate()
-            res.json({
+            res.status(200).json({
                 course : course,
                 instructor_name : course.instructor[0].name
             })//course.overview
@@ -500,13 +503,13 @@ router.get('/courses/lessons/:course_id',auth,async(req,res)=>{
         if( req.user._id.toString() == course.instructor_id || isEnrolled  ){
         const lessons  =  []
         if(!course.lessons){
-            return res.status(404).json('can not find the lessons')
+            return res.status(404).json('there is no lessons yet ')
         }
         course.lessons.forEach((lesson)=>{
             lessons.push(lesson.lesson_title)
         })
         
-        res.json(lessons)
+        res.status(200).json(lessons)
     }
     else{
         res.status(403).json('unauthorized')
@@ -595,7 +598,7 @@ router.get('/courses/course/assignments/:course_code/:title',auth,async(req,res)
             if(assignments.length === 0 ){
                 return res.status(404).json('there are no assignments ')
             }
-            res.json(assignments)
+            res.status(200).json(assignments)
             
         }
         else{
@@ -619,7 +622,7 @@ router.get('/courses/assignments/get_titles/:course_code',auth,async(req,res)=>{
             if(assignments.length === 0 ){
                 return res.status(404).json('there are no assignments ')
             }
-            res.json(assignments)
+            res.status(200).json(assignments)
             
         }
         else{
@@ -728,20 +731,5 @@ router.get('/admins/courses',auth,async (req,res)=>{
     }
 })
 //======================================================================================================================================
-router.get('/auth',auth,async(req,res)=>{
-    try{
-        
-        const course = await Course.findOne({code : req.params.course_code}   )
-        if(!course){
-            return res.status(404).json('can not find the course')
-        }
-        if(course.instructor_id != req.user._id.toString()){
-            return res.status(403).json('unauthorized')
-        }
-        res.json('authorized')
 
-    }catch(e){
-        res.json('server error')
-    }
-})
 module.exports = router

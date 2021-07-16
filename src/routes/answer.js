@@ -101,7 +101,7 @@ router.patch('/editAnswer/:course_code',auth,async (req,res)=>{
     const isValidOperation = updates.every((update)=> allowedUpdates.includes(update))
 
     if(!isValidOperation){
-        return res.status(400).json({error : 'Invalid updates'})
+        return res.status(400).json( 'Invalid updates')
     }
     const {quizID }= req.body
     const{ Answers }=req.body
@@ -160,14 +160,14 @@ router.patch('/editAnswer/:course_code',auth,async (req,res)=>{
      
 
         if(!answer){
-            return res.status(404).json()
+            return res.status(404).json('there is no answer submitted')
         }
 
         res.status(201).json(totalscore)
 
 
     }catch(e){
-        res.status(400).json(e)
+        res.status(500).json(e)
 
     }
 })

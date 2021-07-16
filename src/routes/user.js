@@ -9,6 +9,7 @@ const Course = require('../database/models/course')
 const Answer = require('../database/models/answer')
 const Assignment = require('../database/models/assignment')
 const fs = require('fs')
+const bcrypt = require('bcryptjs')
 
 
 
@@ -29,7 +30,7 @@ const userUpload = multer({ //uploads csv files for creating users
     },
     fileFilter(req,file,callback){
         if(!file.originalname.match(/\.(txt)$/)){  //regular expression 
-            return callback(new Error('please upload a pdf file'))
+            return callback(new Error('please upload a text  file'))
         }
         callback(undefined,true)
     }, 
@@ -162,15 +163,13 @@ router.get('/admins/getAllStudents',auth,async(req,res)=>{
         if(req.user.role === 'admin'){
             const students = await User.find({role : 'student'})
             if(students.length === 0){
-                return res.status(404).json()
+                return res.status(404).json("can not find students ")
             }
             res.json(students)
-
         }
         else{
             res.status(403).json('unauthorized')
         }
-
     }catch(e){
         res.status(500).json(e)
 
@@ -198,7 +197,7 @@ router.get('/admins/getStudentsOfCertainYear/:year',auth,async(req,res)=>{
         }
 
     }catch(e){
-        res.status(500).json()
+        res.status(500).json(e.message)
 
     }
 })
@@ -220,7 +219,7 @@ router.get('/admins/getAllInstructors',auth,async(req,res)=>{
         }
 
     }catch(e){
-        res.status(500).json(e)
+        res.status(500).json(e.message)
 
     }
 })
@@ -235,7 +234,7 @@ router.patch('/admins/users/update',auth,async(req,res)=>{
     })
 
     if(!isValidUpdate){
-        return res.status(400).json({error : 'invalid updates'})
+        return res.status(400).json('invalid updates')
     }
     try{
         if(req.user.role === 'admin'){
@@ -262,7 +261,7 @@ router.patch('/admins/users/update',auth,async(req,res)=>{
             return res.status(403).json('unauthorized')
         }
     }catch(e){
-        res.status(500).json(e.message)
+        res.status(400).json(e.message)
     }
 })
 
@@ -270,17 +269,20 @@ router.patch('/admins/users/update',auth,async(req,res)=>{
 //user updates his own information 
 router.patch('/users/me',auth,async(req,res)=>{
     const updates = Object.keys(req.body)
-    console.log(req.body)
+   //console.log(req.body)
 
-    const validUpdates = ['password','confirmPassword'] 
+    const validUpdates = ['password','confirmPassword','oldPassword'] 
     const isValidUpdate = updates.every((update)=>{
         return validUpdates.includes(update)
     })
 
     if(!isValidUpdate){
-        return res.status(400).json({error : 'invalid updates'})
+        return res.status(400).json('invalid updates')
     }
     try{
+        const userFromDb = await User.findOne({_id : req.user._id})
+        const isMatch = await bcrypt.compare(req.body.oldPassword,userFromDb.password)
+        if(isMatch){
         if(req.body.password === req.body.confirmPassword){
             req.user.password = req.body.password
             await req.user.save()
@@ -289,12 +291,17 @@ router.patch('/users/me',auth,async(req,res)=>{
     else{
         res.status(400).json("the two passwords don't match ")
     }
+    }else{
+        res.status(400).json('the old password is incorrect')
+    }
+    
 
     }catch(e){
-        res.status(500).json()
+        res.status(500).json(e.message)
 
     }
 })
+
 
 //======================================================================================================================================
 //admin delete a user
@@ -321,7 +328,7 @@ router.delete('/admins/deleteUser',auth,async(req,res)=>{
                 return res.json({user,enrolls,assignmentsDeleted})
             }
             else if(user.role === 'admin'){
-                res.json('can not delete an admin!!!')
+                res.status(400).json('can not delete an admin!!!')
 
                 
             }
@@ -440,6 +447,7 @@ router.get('/admins/getAdmins',auth,async(req,res)=>{
 router.post('/usersAuto/:role',auth,userUpload.single('upload'), async (req,res)=>{
     const indicesOfFailedSaving = []
     const savingStatus =[]
+    const savingStatusAndIndicies = []
     try{
         if(req.user.role === 'admin'){
                     const users = await csvtojson().fromFile("./uploads/"+req.file.filename)
@@ -490,29 +498,27 @@ router.post('/usersAuto/:role',auth,userUpload.single('upload'), async (req,res)
                         }
                     }
                      else{
-                         savingStatus.push('error')
+                         savingStatus.push('invalid role')
                      }
                     }
                 savingStatus.forEach((save,index)=>{
                     if(save != 'created'){
-                        indicesOfFailedSaving.push(index+1)
+                        indicesOfFailedSaving.push({
+                            "index_of_line" : index+1,
+                            "status" : save
+                        })
                     }
                 })
                 if(indicesOfFailedSaving.length === 0){
                    return res.status(201).json('successfully created all the users') 
                 }
-                console.log(savingStatus)
-                throw new Error('there was an error while creating the users in lines : ' + indicesOfFailedSaving)
+                res.status(400).json(indicesOfFailedSaving)
         }
         else{
             res.status(403).json('unauthorized')
         } 
     }catch(e){
-        res.status(500).json({
-
-            error : e.message, 
-          
-        })
+        res.status(400).json(e.message)
     }
 })
 //======================================================================================================================================

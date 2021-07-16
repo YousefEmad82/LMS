@@ -42,7 +42,7 @@ router.post('/create', auth,async (req, res) => {
 
         return res.status(201).json(quiz)
     } catch (error) {
-        return res.status(500).json({"error":error.message})
+        return res.status(500).json(error.message)
     }
 })
 
@@ -53,7 +53,7 @@ router.post('/create', auth,async (req, res) => {
     const isValidOperation = updates.every((update)=> allowedUpdates.includes(update))
 
     if(!isValidOperation){
-        return res.status(400).json({error : 'Invalid updates'})
+        return res.status(400).json( 'Invalid updates')
     }
     const _id = req.params.id
 
@@ -71,13 +71,13 @@ router.post('/create', auth,async (req, res) => {
         await quiz.save()
 
         if(!quiz){
-            return res.status(404).json()
+            return res.status(404).json("can not find quiz")
         }
         res.json(quiz)
 
 
     }catch(e){
-        res.status(400).json(e.message)
+        res.status(500).json(e.message)
 
     }
 })
@@ -94,9 +94,9 @@ router.delete('/delete/:id/:course_code',async (req,res)=>{
         }
         const quiz = await Quiz.findOneAndDelete(_id)
         if(!quiz){
-            res.status(404).json()
+            res.status(404).json("can not find quiz")
         }
-        res.json()
+        res.status(200).json()
         
 
     }catch(e){
@@ -179,7 +179,7 @@ router.get('/quizes/getQuiz/:title/:course_code',auth,async(req,res)=>{
     }
 })
 
-
+//get grades 
 router.get('/quizes/getGrades/:course_code/:student_code',auth,async(req,res)=>{
     const student_code=req.params.student_code
     let quizzes = []
