@@ -9,8 +9,8 @@
   "author": "",
   "license": "ISC",
   "keywords": [],
-  "description": "",
   "dependencies": {
+    "@sendgrid/mail": "^7.4.5",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "csvtojson": "^2.0.10",
@@ -24,5 +24,14 @@
     "nodemon": "^2.0.7",
     "socket.io": "^4.1.2",
     "validator": "^13.5.2"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YousefEmad82/LMS.git"
+  },
+  "bugs": {
+    "url": "https://github.com/YousefEmad82/LMS/issues"
+  },
+  "homepage": "https://github.com/YousefEmad82/LMS#readme",
+  "description": ""
 }

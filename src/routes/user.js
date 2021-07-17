@@ -10,7 +10,7 @@ const Answer = require('../database/models/answer')
 const Assignment = require('../database/models/assignment')
 const fs = require('fs')
 const bcrypt = require('bcryptjs')
-
+const sendEmail = require('../emails/account')
 
 
 //======================================================================================================================================
@@ -50,7 +50,7 @@ router.post('/users',async(req,res)=>{
             const user =  new User({
             name ,
             email,
-            password,
+            password : code,
             role,
             code,
             year,
@@ -65,11 +65,17 @@ router.post('/users',async(req,res)=>{
                     course_id : courses[i]._id,
                     user_id : user._id
                 })
-                console.log(enroll)
                 await enroll.save()
             }
         }
-        // const token = await user.generateAuthToken()
+        const coursesNames = []
+        courses.forEach((course)=>{
+            coursesNames.push(course.name)
+        })
+        const subject = "your LMS account"
+        const text = "your email is :  " + user.email  + '\n' + "your password is  your university code "  + '\n' + "please change the password as soon as possible" + '\n' +  "you are enrolled in those courses : " + coursesNames
+        console.log(user.email)
+        sendEmail(user.email,subject,text)
         return res.status(201).json(user)
 
         }
@@ -78,13 +84,17 @@ router.post('/users',async(req,res)=>{
          const user =  new User({
             name ,
             email,
-            password,
+            password : code,
             role,
             code,
             
         })
         await user.save()
         // const token = await user.generateAuthToken()
+        const subject = "your LMS account"
+        const text = "your email is :  " + user.email  + '\n' + "your password is  your university code "  + '\n' + "please change the password as soon as possible" + '\n' 
+        console.log(user.email)
+        sendEmail(user.email,subject,text)
         return res.status(201).json(user)
         }
         else{
@@ -92,11 +102,15 @@ router.post('/users',async(req,res)=>{
          const user =  new User({
             name ,
             email,
-            password,
+            password : code,
             role,
             code,
         })
         await user.save()
+        const subject = "your LMS account"
+        const text = "your email is :  " + user.email  + '\n' + "your password is  your university code "  + '\n' + "please change the password as soon as possible" + '\n' 
+        console.log(user.email)
+        sendEmail(user.email,subject,text)
         return res.status(201).json(user)
 
         }

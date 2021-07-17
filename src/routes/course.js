@@ -13,6 +13,7 @@ const fs = require('fs')
 const Assignment = require('../database/models/assignment')
 const zip = require('express-zip')
 require('../database/mongoose')
+const sendEmail = require('../emails/account')
 
 //the setup of the file upload of the lessons and assignments 
 //======================================================================================================================================
@@ -440,6 +441,16 @@ router.post('/courses/course/lessonsUpload',auth,upload.single('upload'),async (
 
             })
             await course.save()
+            const students = await User.find({year : course.year})
+            console.log(students)
+            if(students){
+                const subject = "new lesson uploaded"
+                const text = "the instructor : " + req.user.name + " uploaded lesson " + req.body.lesson_title + " in course " + course.name
+                students.forEach((user)=>{
+                   sendEmail(user.email,subject,text)
+                })
+            }
+
             res.status(200).json('successfully uploaded ')
 
         }else{

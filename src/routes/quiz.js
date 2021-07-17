@@ -238,7 +238,25 @@ router.get('/quizes/getGrades/:course_code/:student_code',auth,async(req,res)=>{
 
  
 
-
+//check the deadline of a quiz
+router.get('/quizzes/checkTime/:satartDate/:endDate',auth,async(req,res)=>{
+    try{
+        if(req.user.role === 'student'){
+        let date1 = new Date(req.params.startDate).getTime()
+        let date2 = new Date(req.params.endDate).getTime()
+        const distance = date1 - date2
+        if(distance<0){
+            res.status(401).json(false)
+        }else{
+            res.status(200).json(true)
+        }
+        }else{
+            res.status(403).json('unauthorized')
+        }   
+    }catch(e){
+        res.status(500).json(e.message)
+    }
+})
 
 
 
