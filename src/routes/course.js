@@ -365,9 +365,33 @@ router.patch('/admins/courses/update',auth,async(req,res)=>{
         if(req.user.role === 'admin'){
           
             const course = await Course.findOneAndUpdate({code : req.body.old_code},req.body,{new : true})
+
             if(!course){
                 return res.status(404).json('please enter the right code of the course!')
             }
+            if(req.body.year){
+            const enrolls = await Enroll.deleteMany({
+                course_id : course._id
+            })
+            const students = await User.find({
+                role : 'student',
+                year : req.body.year
+            })
+            if(students.length === 0){
+                return res.status(404).json('there are no students in this year !')
+            }
+            let i
+            for(i=0;i<students.length;i++){
+                const enroll = new Enroll({
+                    course_id : course._id,
+                    user_id : students[i]._id
+                })
+                await enroll.save()
+
+            }
+            }
+
+            
             res.status(200).json(course)
         }
         else{

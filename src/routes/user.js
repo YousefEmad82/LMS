@@ -148,7 +148,7 @@ router.post('/users/logout',auth,async(req,res)=>{
             return token.token != req.token
         })
         await req.user.save()
-        res.json()
+        res.status(200).json()
 
     }catch(e){
         res.status(500).json()
@@ -179,7 +179,7 @@ router.get('/admins/getAllStudents',auth,async(req,res)=>{
             if(students.length === 0){
                 return res.status(404).json("can not find students ")
             }
-            res.json(students)
+            res.status(200).json(students)
         }
         else{
             res.status(403).json('unauthorized')
