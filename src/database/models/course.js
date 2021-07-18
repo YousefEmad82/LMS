@@ -46,6 +46,7 @@ const mongoose = require('mongoose')
             },
             video_id : {
                 type : String,
+                default : null
             }  
          }
      ]
