@@ -43,7 +43,10 @@ const mongoose = require('mongoose')
             },
             instructor_id: {
                 type : String,
-            },  
+            },
+            video_id : {
+                type : String,
+            }  
          }
      ]
           

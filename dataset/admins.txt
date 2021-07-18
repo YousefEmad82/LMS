@@ -1,0 +1,12 @@
+name,email,code,role
+Angela,agnes.boyer@example.com,ghdXbvMC,admin
+Ceyhan,aarshy.rdyy@example.com,TnrXqijt,admin
+Roger,policarpo.martins@example.com,XPkUwLxT,admin
+Johanne,ilona.herwig@example.com,zCqydZif,admin
+Lisa,dolores.jahn@example.com,RShCoEdR,admin
+Clara,mark.ross@example.com,rczluMib,admin
+Giray,alban.fernandez@example.com,KUTOCwxo,admin
+Kuzey,ailin.berdal@example.com,qdzyUKWQ,admin
+Fletcher,rawi.vandersnoek@example.com,qGrmRlja,admin
+Alexis,elin.nodland@example.com,lTFLBTUO,admin
+Cindy,nooa.kari@example.com,myrMcdVf,admin

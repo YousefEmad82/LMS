@@ -453,29 +453,40 @@ router.get('/courses/course/:code',auth,async(req,res)=>{
 //instructor uploads lessons 
 router.post('/courses/course/lessonsUpload',auth,upload.single('upload'),async (req,res)=>{
     try{
+        let video_id
         const course = await Course.findById(req.body.course_id)
         if(req.user.role === 'instructor' && req.user._id.toString() == course.instructor_id){
             if(!course){
                 return res.status(404).json('can not find the course')
             }
+            if(req.body.video_url){
+                for(let i = 0;i<req.body.video_url.length;i++){
+                    if(req.body.video_url[i]+req.body.video_url[i+1] === 'v='){
+                          video_id = req.body.video_url.slice(i+2)
+
+                    }
+                }
+            }
+            console.log(video_id)
             course.lessons = course.lessons.concat({
                 lesson_title : req.body.lesson_title,
                 lesson_name_filesystem : req.file.filename,
                 instructor_id : req.user._id,
+                video_id : video_id
 
             })
             await course.save()
             const students = await User.find({year : course.year})
-            console.log(students)
+            // console.log(students)
             if(students){
                 const subject = "new lesson uploaded"
                 const text = "the instructor : " + req.user.name + " uploaded lesson " + req.body.lesson_title + " in course " + course.name
                 students.forEach((user)=>{
-                   sendEmail(user.email,subject,text)
+                  // sendEmail(user.email,subject,text)
                 })
             }
 
-            res.status(200).json('successfully uploaded ')
+            res.status(200).json('successfully uploaded')
 
         }else{
             res.status(403).json('unauthorized')
