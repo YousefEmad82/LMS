@@ -466,6 +466,13 @@ router.post('/courses/course/lessonsUpload',auth,upload.single('upload'),async (
 
                     }
                 }
+                    for(let j = 0;j<video_id.length;j++){
+                         if(video_id[j] === '&'){
+                         video_id = video_id.slice(0,j)
+
+                         }
+                    }
+               
             }
             console.log(video_id)
             course.lessons = course.lessons.concat({
@@ -555,7 +562,7 @@ router.get('/courses/lessons/:course_id',auth,async(req,res)=>{
             lessons.push(lesson.lesson_title)
         })
         
-        res.status(200).json(lessons)
+        res.status(200).json(course.lessons)
     }
     else{
         res.status(403).json('unauthorized')
