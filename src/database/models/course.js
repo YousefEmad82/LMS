@@ -25,7 +25,7 @@ const mongoose = require('mongoose')
 
      score : {
          type : Number,
-         max : 100,
+         default : 100,
          required : true,
      },
      instructor_id : {

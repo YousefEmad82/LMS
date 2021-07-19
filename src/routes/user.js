@@ -257,7 +257,7 @@ router.patch('/admins/users/update',auth,async(req,res)=>{
                     delete req.body.confirmPassword //removing the second  password (confirmPassword property) from the request body
                 }
                 else{
-                    return res.json(' the two passwords dont match')
+                    return res.status(400).json(' the two passwords dont match')
                 }
             }
             const user =  await User.findOne({code : req.body.old_code})
@@ -300,7 +300,7 @@ router.patch('/users/me',auth,async(req,res)=>{
         if(req.body.password === req.body.confirmPassword){
             req.user.password = req.body.password
             await req.user.save()
-            res.json(req.user)
+            res.status(200).json(req.user)
     }
     else{
         res.status(400).json("the two passwords don't match ")
@@ -339,7 +339,7 @@ router.delete('/admins/deleteUser',auth,async(req,res)=>{
                 fs.unlinkSync("uploads/"+ assignments[i].fileName)
             }
                 await User.findByIdAndDelete(user._id)
-                return res.json({user,enrolls,assignmentsDeleted})
+                return res.status(200).json({user,enrolls,assignmentsDeleted})
             }
             else if(user.role === 'admin'){
                 res.status(400).json('can not delete an admin!!!')
@@ -348,7 +348,7 @@ router.delete('/admins/deleteUser',auth,async(req,res)=>{
             }
             else{
                 await User.findByIdAndDelete(user._id)
-                res.json(user)
+                res.status(200).json(user)
             }
         } 
         else{
@@ -370,7 +370,7 @@ router.get('/students/student/:code',auth,async(req,res)=>{
             if(!student){
                 return res.status(404).json('can not find the student!')
             }
-            res.json(student)
+            res.status(200).json(student)
         }
         else{
             res.status(403).json('unauthorized')

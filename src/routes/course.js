@@ -14,6 +14,7 @@ const Assignment = require('../database/models/assignment')
 const zip = require('express-zip')
 require('../database/mongoose')
 const sendEmail = require('../emails/account')
+const InstructorAssignment = require('../database/models/instructor_assignment')
 
 //the setup of the file upload of the lessons and assignments 
 //======================================================================================================================================
@@ -114,7 +115,7 @@ router.post('/admins/enroll',auth,async(req,res)=>{
                 course_name : enroll.course_id.name,
                 status : 'sucessfully enrolled'})
             }
-            res.json('the student is already enrolled')
+            res.status(400).json('the student is already enrolled')
         }
     else{
         res.status(403).json('unauthorized')
@@ -337,7 +338,7 @@ router.get('/admins/InstructorCourses/:code',auth,async(req,res)=>{
             if(instructor.instructor_courses.length ===0){
                 return res.status(404).json('the instructor does not have any courses yet!')
             }
-            res.json(instructor.instructor_courses)
+            res.status(200).json(instructor.instructor_courses)
             }
             else{
                 res.status(403).json('unauthorized')
@@ -727,7 +728,7 @@ router.get('/courses/course/assignments/myAssignment/:course_id/:title',auth,asy
                 course_id : req.params.course_id,
                 user_id : req.user._id
             })
-            if(!enroll){
+            if(enroll){
                 return res.status(403).json('unauthorized')
             }
             const assignment = await Assignment.findOne({
@@ -784,5 +785,42 @@ router.get('/admins/courses',auth,async (req,res)=>{
     }
 })
 //======================================================================================================================================
+//======================================================================================================================================
+//instructor uploads assignment 
+router.post('/courses/course/instructorUploadAssignment',auth,upload.single('upload'),async(req,res)=>{
+    try{
+        const course = await Course.findOne({code : req.body.course_code})
+        if(req.user.role === 'instructor' && req.user._id.toString() == course.instructor_id){
+            if(!course){
+                return res.status(404).json('can not find the course')
+            }
+            const assignment = new InstructorAssignment({
+                title : req.body.title,
+                fileName : req.file.filename,
+                courseCode : req.body.course_code,
+                instructorCode : req.user.code,
+                instructorName : req.user.name
+            })
+            await assignment.save()
+            const students = await User.find({year : course.year})
+            // console.log(students)
+            if(students){
+                const subject = "new assignment uploaded"
+                const text = "the instructor : " + req.user.name + " uploaded assignment " + req.body.title + " in course " + course.name
+                students.forEach((user)=>{
+                  // sendEmail(user.email,subject,text)
+                })
+            }
+            res.status(200).json('successfully uploaded ')
+        }else{
+            res.status(403).json('unauthorized')
+        }
+
+    }catch(e){
+        res.status(500).json(e.message)
+
+    }
+
+})
 
 module.exports = router
