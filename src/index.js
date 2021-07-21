@@ -39,7 +39,7 @@ function isLetter(str) {
   }
 app.listen(port,()=>{
 
-    console.log('server is running on port 3000   ')
+    console.log('server is running on port    '+port)
     // const users = await csvtojson().fromFile("./uploads/password")
     // const usersFirst =[]
     // for(let i=0;i<users.length;i++){
