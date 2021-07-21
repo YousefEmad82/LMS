@@ -461,7 +461,7 @@ router.get('/admins/getAdmins',auth,async(req,res)=>{
 router.post('/usersAuto/:role',auth,userUpload.single('upload'), async (req,res)=>{
     const indicesOfFailedSaving = []
     const savingStatus =[]
-    const savingStatusAndIndicies = []
+    const numberOfSavedSuccessfuly  = []
     try{
         if(req.user.role === 'admin'){
                     const users = await csvtojson().fromFile("./uploads/"+req.file.filename)
@@ -526,7 +526,14 @@ router.post('/usersAuto/:role',auth,userUpload.single('upload'), async (req,res)
                 if(indicesOfFailedSaving.length === 0){
                    return res.status(201).json('successfully created all the users') 
                 }
-                res.status(400).json(indicesOfFailedSaving)
+                let counter =0
+                savingStatus.forEach((line)=>{
+                    if(line === 'created'){
+                        counter = counter+1
+                    }
+                })
+                numberOfSavedSuccessfuly.push({'number_of_saved_lines' : counter,'number_of_failed_lines ' : savingStatus.length - counter })
+                res.status(400).json({indicesOfFailedSaving,numberOfSavedSuccessfuly})
         }
         else{
             res.status(403).json('unauthorized')
