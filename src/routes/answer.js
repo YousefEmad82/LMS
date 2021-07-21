@@ -6,6 +6,7 @@ const Score=require('../database/models/score')
 const auth = require('../middlwares/auth')
 const Course = require('../database/models/course')
 const Enroll = require('../database/models/enroll')
+const mongoose = require('mongoose')
 
 
 // save answers 
@@ -56,23 +57,26 @@ router.post('/submit',auth,async (req, res) =>{
 
 
         const quiz= await Quiz.findOne({_id:quizID})
-        var sum=0
+        let sum=0
+        const answersFromDb = await Answer.findOne({quizID,student_code : req.user.code})
         quiz.questions.forEach(element => {
-            
-            Answers.forEach(ans=>{
-                
+            answersFromDb.Answers.forEach(ans=>{
                 if(element.question===ans.question){
-
                     if(element.answer===ans.answer){
-                        sum+=1
-
+                        sum = sum + parseInt(element.grades)
+                        ans.right_ans=true
                     }
+                        
+                    
                      
                 }
                 
             })
 
         })
+        const answerModified = await Answer.findOneAndUpdate({quizID,student_code : req.user.code},answersFromDb,{new : true})
+        // console.log(answerModified )
+
         const totalscore = new Score({
                     quiz_id:quizID,
                     score:sum,
@@ -86,7 +90,7 @@ router.post('/submit',auth,async (req, res) =>{
        
         
         
-         res.status(201).json(totalscore)
+         res.status(201).json({totalscore,answerModified})
 
     } catch (error) {
          res.status(500).json(error.message)
@@ -172,6 +176,52 @@ router.patch('/editAnswer/:course_code',auth,async (req,res)=>{
     }
 })
 
+
+router.get('/getAnswers/:quiz_id/:course_code/:student_code',auth,async(req,res)=>{
+    const _id=req.params.quiz_id
+    try{
+        const course = await Course.findOne({code : req.params.course_code}   )
+        if(!course){
+            return res.status(404).json('can not find the course')
+        }
+        if(req.user.role === 'instructor'){
+        if(course.instructor_id != req.user._id.toString()){
+            return res.status(403).json('unauthorized')
+        }
+        }
+        if(req.user.role === 'student'){
+            const enroll = await Enroll.findOne({
+                user_id  : req.user._id,
+                course_id : course._id
+            })
+            if(!enroll){
+                return res.status(403).json('unauthorized')
+            }
+
+        }
+
+        const answer = await Answer.find({
+            quizID:mongoose.Types.ObjectId(_id),
+            student_code : req.params.student_code,
+            course_code  : req.params.course_code
+        })
+        console.log(_id)
+        const answersarray= []
+        for(let i = 0 ; i<answer.length;i++){
+            answersarray.push(answer[i].Answers)
+        }
+        if(answer.length===0){
+            return res.status(404).json('can not find the answer')
+        }
+        console.log(answersarray);
+
+        res.status(200).json(answersarray)
+    }catch(e){
+        console.log(e.message);
+        res.status(500).json(e.message)
+    }
+
+})
 
 
 

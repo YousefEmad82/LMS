@@ -16,6 +16,10 @@ const AnswerSchema = new mongoose.Schema({
             type:String,
             required:true,
             trim:true
+        },
+        right_ans:{
+            type:Boolean,
+            default:false
         }
     }   
     ],

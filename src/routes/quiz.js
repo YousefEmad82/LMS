@@ -23,6 +23,8 @@ router.post('/create', auth,async (req, res) => {
         const { title } = req.body
         const { total_marks } = req.body
         const { time } = req.body
+        const { startDate } = req.body
+        const { endDate } = req.body
         const { questions } = req.body
         const{course_code} = req.body
         const {instructor_code}  = req.body
@@ -32,6 +34,8 @@ router.post('/create', auth,async (req, res) => {
             
             title,
             time,
+            startDate,
+            endDate,
             total_marks,
             questions,
             course_code,
@@ -82,8 +86,9 @@ router.post('/create', auth,async (req, res) => {
     }
 })
 //delete quiz
-router.delete('/delete/:id/:course_code',async (req,res)=>{
+router.delete('/delete/:id/:course_code',auth,async (req,res)=>{
     const _id = req.params.id
+
     try{
         const course = await Course.findOne({code : req.params.course_code}   )
         if(!course){
@@ -92,7 +97,7 @@ router.delete('/delete/:id/:course_code',async (req,res)=>{
         if(course.instructor_id != req.user._id.toString()){
             return res.status(403).json('unauthorized')
         }
-        const quiz = await Quiz.findOneAndDelete(_id)
+        const quiz = await Quiz.findOneAndDelete({_id})
         if(!quiz){
             res.status(404).json("can not find quiz")
         }
@@ -100,6 +105,7 @@ router.delete('/delete/:id/:course_code',async (req,res)=>{
         
 
     }catch(e){
+        console.log(e.message)
         res.status(500).json(e)
 
     }
@@ -238,27 +244,43 @@ router.get('/quizes/getGrades/:course_code/:student_code',auth,async(req,res)=>{
 
  
 
-//check the deadline of a quiz
-router.get('/quizzes/checkTime/:satartDate/:endDate',auth,async(req,res)=>{
+
+
+router.get('/quizes/checkQuiz/:id/:course_code',auth,async(req,res)=>{
     try{
-        if(req.user.role === 'student'){
-        let date1 = new Date(req.params.startDate).getTime()
-        let date2 = new Date(req.params.endDate).getTime()
-        const distance = date1 - date2
-        if(distance<0){
-            res.status(401).json(false)
-        }else{
-            res.status(200).json(true)
+        const _id=req.params.id
+        const course = await Course.findOne({code : req.params.course_code}   )
+        if(!course){
+            return res.status(404).json('can not find the course')
         }
-        }else{
-            res.status(403).json('unauthorized')
-        }   
+        if(req.user.role === 'student'){
+        const enroll = await Enroll.findOne({
+            user_id  : req.user._id,
+            course_id : course._id
+        })
+        
+        if(!enroll){
+            return res.status(403).json('unauthorized')
+        }
+    }
+    
+        const found = await Score.findOne({
+            quiz_id : _id,
+            student_code : req.user.code,
+            course_code  : req.params.course_code
+        })
+        if(!found){
+            return res.status(404).json('not found')
+        }
+        console.log(found.score);
+        res.status(200).json(found.score)
+
+       
+
     }catch(e){
         res.status(500).json(e.message)
     }
 })
-
-
 
 
 

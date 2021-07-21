@@ -12,6 +12,14 @@ const QuizSchema = new mongoose.Schema({
         required:true
         
     },
+    startDate:{
+        type:String,
+        required:true
+    },
+    endDate:{
+        type:String,
+        required:true
+    },
     time:{
         type:Number,
         required:true
@@ -24,6 +32,11 @@ const QuizSchema = new mongoose.Schema({
             trim:true
         },
         answer:{
+            type:String,
+            required:true,
+            trim:true
+        },
+        grades:{
             type:String,
             required:true,
             trim:true

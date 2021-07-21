@@ -365,7 +365,7 @@ router.patch('/admins/courses/update',auth,async(req,res)=>{
         }
         if(req.user.role === 'admin'){
 
-            const course = await Course.findOne({code : req.body.old_code})
+            let course = await Course.findOne({code : req.body.old_code})
             if(!course){
                 return res.status(404).json('please enter the right code of the course!')
             }
@@ -829,7 +829,6 @@ router.post('/courses/course/instructorUploadAssignment',auth,upload.single('upl
 //get assignments descriptions titles
 router.get('/courses/course/getAssignments/:course_id',auth,async(req,res)=>{
     try{
-        
         const course = await Course.findById({_id : req.params.course_id})
         const instructor = await User.findById(course.instructor_id)
         if(req.user.role ==='student'){
