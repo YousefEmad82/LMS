@@ -54,7 +54,7 @@ const upload = multer({ //uploads of lessons and assignments
 router.post('/admins/addCourse',auth,async(req,res)=>{
     try{
         if(req.user.role === 'admin'){
-            const instructor = await User.findOne({code : req.body.instructor_code})
+            const instructor = await User.findOne({code : req.body.instructor_code, role : 'instructor'})
             if(!instructor){
                  return res.status(404).json('please enter a correct instructor code!')
             }
@@ -364,9 +364,8 @@ router.patch('/admins/courses/update',auth,async(req,res)=>{
             return res.status(400).json( 'invalid updates')
         }
         if(req.user.role === 'admin'){
-          
-            const course = await Course.findOneAndUpdate({code : req.body.old_code},req.body,{new : true})
 
+            const course = await Course.findOne({code : req.body.old_code})
             if(!course){
                 return res.status(404).json('please enter the right code of the course!')
             }
@@ -378,10 +377,8 @@ router.patch('/admins/courses/update',auth,async(req,res)=>{
                 role : 'student',
                 year : req.body.year
             })
-            if(students.length === 0){
-                return res.status(404).json('there are no students in this year !')
-            }
-            let i
+            if(students.length != 0){
+                let i
             for(i=0;i<students.length;i++){
                 const enroll = new Enroll({
                     course_id : course._id,
@@ -389,9 +386,15 @@ router.patch('/admins/courses/update',auth,async(req,res)=>{
                 })
                 await enroll.save()
 
+            
+            }
             }
             }
 
+          
+             course = await Course.findOneAndUpdate({code : req.body.old_code},req.body,{new : true})
+
+           
             
             res.status(200).json(course)
         }
@@ -785,7 +788,7 @@ router.get('/admins/courses',auth,async (req,res)=>{
     }
 })
 //======================================================================================================================================
-//======================================================================================================================================
+
 //instructor uploads assignment 
 router.post('/courses/course/instructorUploadAssignment',auth,upload.single('upload'),async(req,res)=>{
     try{
@@ -822,5 +825,87 @@ router.post('/courses/course/instructorUploadAssignment',auth,upload.single('upl
     }
 
 })
+//======================================================================================================================================
+//get assignments descriptions titles
+router.get('/courses/course/getAssignments/:course_id',auth,async(req,res)=>{
+    try{
+        
+        const course = await Course.findById({_id : req.params.course_id})
+        const instructor = await User.findById(course.instructor_id)
+        if(req.user.role ==='student'){
+            const enroll = await Enroll.findOne({
+                course_id : req.params.course_id,
+                user_id : req.user._id
+            })
+            if(!enroll){
+                return res.status(403).json('unauthorized')
+            }
+            const assignments = await InstructorAssignment.find({
+                courseCode : course.code,
+                instructorCode : instructor.code
+            })
+            
+            if(assignments.length == 0){
+                return res.status(404).json('there are assignments uploaded')
+            }
+            res.status(200).json(assignments)
+        }else if(req.user.role === 'instructor' ){
+            const assignments = await InstructorAssignment.find({
+                courseCode : course.code,
+                instructorCode : req.user.code
+            })
+            res.status(200).json(assignments)   
+        }else{
+            res.status(403).json('unauthorized')
+        }
+    }catch(e){
+        res.status(500).json(e.message)
+        
+    }
+})
+//======================================================================================================================================
+//download assignment description 
+router.get('/courses/course/downloadAssignments/:course_id/:title',auth,async(req,res)=>{
+    try{
+        
+        const course = await Course.findById({_id : req.params.course_id})
+        const instructor = await User.findById(course.instructor_id)
+        if(req.user.role ==='student'){
+            const enroll = await Enroll.findOne({
+                course_id : req.params.course_id,
+                user_id : req.user._id
+            })
+            if(!enroll){
+                return res.status(403).json('unauthorized')
+            }
+            const assignments = await InstructorAssignment.find({
+                courseCode : course.code,
+                instructorCode : instructor.code,
+                title : req.params.title
+            })
+            
+            if(assignments.length == 0){
+                return res.status(404).json('ther are no  assignments uploaded')
+            }
+            const path = 'uploads/'+assignments[0].fileName 
+            res.status(200).download(path)
+        }else if(req.user.role === 'instructor' ){
+            const assignments = await InstructorAssignment.find({
+                courseCode : course.code,
+                instructorCode : req.user.code,
+                title : req.params.title
+
+            })
+            const path = 'uploads/'+assignments[0].fileName 
+            res.status(200).download(path) 
+        }else{
+            res.status(403).json('unauthorized')
+        }
+    }catch(e){
+        res.status(500).json(e.message)
+        
+    }
+})
+
 
 module.exports = router
