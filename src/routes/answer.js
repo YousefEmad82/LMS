@@ -144,11 +144,9 @@ router.patch('/editAnswer/:course_code',auth,async (req,res)=>{
 
                     if(element.answer===ans.answer){
                         sum+=1
-
-                    }
-                     
+                    }  
                 }
-                
+   
             })
 
         })

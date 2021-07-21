@@ -11,6 +11,7 @@ app.use(cors({origin: 'http://localhost:3000'}))
 const csvtojson = require('csvtojson')
 const jsontocsv = require('json-2-csv')
 
+const port = process.env.PORT || 3000
 
 
 
@@ -36,7 +37,7 @@ function isLetter(str) {
     }
     return false
   }
-app.listen('3000',async()=>{
+app.listen(port,()=>{
 
     console.log('server is running on port 3000   ')
     // const users = await csvtojson().fromFile("./uploads/password")
