@@ -3,5 +3,4 @@ mongoose.connect('mongodb+srv://LMSProject:a12b34c.@cluster0.73ugb.mongodb.net/L
     useNewUrlParser : true,
     useCreateIndex : true,
     useFindAndModify : false,
-    ssl : true
 })
