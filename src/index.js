@@ -11,7 +11,7 @@ app.use(cors({origin: 'http://localhost:3000'}))
 const csvtojson = require('csvtojson')
 const jsontocsv = require('json-2-csv')
 
-const port =  3000
+const port = process.env.PORT || 3000
 
 
 
