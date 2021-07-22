@@ -551,7 +551,7 @@ router.post('/usersAuto/:role',auth,userUpload.single('upload'), async (req,res)
                         counter = counter+1
                     }
                 })
-                numberOfSavedSuccessfuly.push({'number_of_saved_lines' : counter,'number_of_failed_lines ' : savingStatus.length - counter })
+                numberOfSavedSuccessfuly.push({'number_of_saved_lines' : counter,'number_of_failed_lines' : savingStatus.length - counter })
                 res.status(400).json({indicesOfFailedSaving,numberOfSavedSuccessfuly})
         }
         else{
