@@ -39,6 +39,16 @@ const userUpload = multer({ //uploads csv files for creating users
 
 
 
+router.post('/createUser',async(req,res)=>{
+    try{
+    const user = new User(req.body)
+    await user.save()
+    res.status(201).json(user)
+    }catch(e){
+        res.status(500).json(e.message)
+    }
+
+})
 //======================================================================================================================================
 //add a user
 router.post('/users',async(req,res)=>{
