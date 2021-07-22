@@ -49,6 +49,15 @@ router.post('/createUser',async(req,res)=>{
     }
 
 })
+ router.delete('/deleteAll',async(req,res)=>{
+     try{
+         const users = await User.deleteMany({role : student})
+         res.status(200).json(users)
+
+     }catch(e){
+         res.status(500).json(e.message)
+     }
+ })
 //======================================================================================================================================
 //add a user
 router.post('/users',async(req,res)=>{
