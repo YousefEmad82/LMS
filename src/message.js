@@ -17,7 +17,7 @@ const port = process.env.PORT || 8000
 // const server =http.createServer(app)
 const io = require('socket.io')(port,{
     cors: {
-        origin: 'http://localhost:3000',
+        
     }
 })
 const cors = require('cors')
