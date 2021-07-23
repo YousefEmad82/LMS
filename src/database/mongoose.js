@@ -4,3 +4,4 @@ mongoose.connect('mongodb+srv://LMSProject:a12b34c.@cluster0.73ugb.mongodb.net/L
     useCreateIndex : true,
     useFindAndModify : false,
 })
+
