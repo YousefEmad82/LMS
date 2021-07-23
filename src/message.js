@@ -1,15 +1,14 @@
-const sock = function(){
 const http = require('http')
 const express = require('express')
 const path = require('path')
 // const socketio = require('socket.io')
 const Filter =require('bad-words')
 const moment = require('moment')
-require('./database/mongoose')
+require('./db/mongoose')
 
 const Message = require('./database/models/message')
-const {generateMessage } = require('./utils/messages')
-const {addUser,removeUser,getUser,getUsersInRoom} = require('./utils/users')
+const {generateMessage } = require('./utlis/messages')
+const {addUser,removeUser,getUser,getUsersInRoom} = require('./utlis/users')
 
 const app=express()
 const port = process.env.PORT || 8000
@@ -17,7 +16,7 @@ const port = process.env.PORT || 8000
 // const server =http.createServer(app)
 const io = require('socket.io')(port,{
     cors: {
-        
+        origin: 'http://localhost:3000',
     }
 })
 const cors = require('cors')
@@ -130,6 +129,4 @@ socket.on('askroomData',(room)=>{
 // server.listen(8080, () => {
 //     console.log('Server is up on port 8080s.')
 // })
-}
 
-module.exports = sock
