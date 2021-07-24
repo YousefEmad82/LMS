@@ -283,6 +283,23 @@ router.patch('/admins/users/update',auth,async(req,res)=>{
             if(!user){
                 return res.status(404).json('please enter the right code of the user!')
             }
+            if(req.body.year){
+            const enrolls = await Enroll.deleteMany({
+                user_id : user._id
+            })
+            const courses = await Course.find({year : req.body.year})
+            if(courses){
+                for(let i = 0;i<courses.length;i++){
+                    const newEnroll = new Enroll({
+                        user_id : user._id,
+                        course_id : courses[i]._id
+                    })
+                    await newEnroll.save()
+                }
+
+            }
+            }
+          
             updates.forEach((update)=>{
                 user[update] = req.body[update]
                 user.markModified(update)  //to allow me save the changes in the database,so i can use the hashing algorithm

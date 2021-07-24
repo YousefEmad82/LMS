@@ -731,7 +731,7 @@ router.get('/courses/course/assignments/myAssignment/:course_id/:title',auth,asy
                 course_id : req.params.course_id,
                 user_id : req.user._id
             })
-            if(enroll){
+            if(!enroll){
                 return res.status(403).json('unauthorized')
             }
             const assignment = await Assignment.findOne({
