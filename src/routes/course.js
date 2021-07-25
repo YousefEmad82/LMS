@@ -909,7 +909,7 @@ router.get('/courses/course/downloadAssignments/:course_id/:title',auth,async(re
                 return res.status(404).json('ther are no  assignments uploaded')
             }
             //const path = 'uploads/'+assignments[0].fileName 
-            const url = await AWS.aws_generateUrl(assignments.fileName)
+            const url = await AWS.aws_generateUrl(assignments[0].fileName)
             console.log(url)
             res.status(200).json(url)
         }else if(req.user.role === 'instructor' ){
@@ -920,13 +920,14 @@ router.get('/courses/course/downloadAssignments/:course_id/:title',auth,async(re
 
             })
             //const path = 'uploads/'+assignments[0].fileName 
-            const url = await AWS.aws_generateUrl(assignments.fileName)
+            const url = await AWS.aws_generateUrl(assignments[0].fileName)
             console.log(url)
             res.status(200).json(url)
         }else{
             res.status(403).json('unauthorized')
         }
     }catch(e){
+        console.log(e)
         res.status(500).json(e.message)
         
     }
