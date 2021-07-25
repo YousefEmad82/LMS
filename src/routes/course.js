@@ -15,33 +15,46 @@ const zip = require('express-zip')
 require('../database/mongoose')
 const sendEmail = require('../emails/account')
 const InstructorAssignment = require('../database/models/instructor_assignment')
+const AWS = require('../middlwares/aws')
+
 
 //the setup of the file upload of the lessons and assignments 
 //======================================================================================================================================
-var storage = multer.diskStorage({  //uploads of lessons and assignments
-    destination: function (req, file, cb) {
-      cb(null, 'uploads')
-    },
-    filename:   function (req, file, cb) {
-      cb(null,   req.user.name+ Date.now()+ '.pdf')
-    }
+// var storage = multer.diskStorage({  //uploads of lessons and assignments
+//     destination: function (req, file, cb) {
+//       cb(null, 'uploads')
+//     },
+//     filename:   function (req, file, cb) {
+//       cb(null,   req.user.name+ Date.now()+ '.pdf')
+//     }
 
-  })
-const upload = multer({ //uploads of lessons and assignments 
-    storage : storage,
-    limits : {
-        fileSize : 50000000,
-    },
-    fileFilter(req,file,callback){
-        if(!file.originalname.match(/\.(pdf)$/)){  //regular expression 
-            return callback(new Error('please upload a pdf file'))
-        }
-        callback(undefined,true)
-    }, 
-})
+//   })
+// const upload = multer({ //uploads of lessons and assignments 
+//     storage : storage,
+//     limits : {
+//         fileSize : 50000000,
+//     },
+//     fileFilter(req,file,callback){
+//         if(!file.originalname.match(/\.(pdf)$/)){  //regular expression 
+//             return callback(new Error('please upload a pdf file'))
+//         }
+//         callback(undefined,true)
+//     }, 
+// })
 //======================================================================================================================================
 
-
+const upload = multer({
+    // dest : 'images', i conly use it when i need the image to be stored in the file system but if i want it in my data base i send it with the req//determine the name of the folder which containes the files
+     limits : {
+         fileSize : 100000000,//it determine the maximum file size in bytes
+     },
+    fileFilter(req,file,callback){  
+        if(!file.originalname.match(/\.(pdf)$/)){  //regular expression 
+            return callback(new Error('please upload a pdf '))
+        }
+        callback(undefined,true)
+    }
+ })
 
 
 
@@ -81,6 +94,7 @@ router.post('/admins/addCourse',auth,async(req,res)=>{
 
     }
 })
+
 //======================================================================================================================================
 //enroll a student
 router.post('/admins/enroll',auth,async(req,res)=>{
@@ -478,10 +492,12 @@ router.post('/courses/course/lessonsUpload',auth,upload.single('upload'),async (
                     }
                
             }
-            console.log(video_id)
+            // console.log(video_id)
+            const aws = await AWS.aws_upload(req.file.buffer,req.user.name,req.user.code)
+            // console.log(aws)
             course.lessons = course.lessons.concat({
                 lesson_title : req.body.lesson_title,
-                lesson_name_filesystem : req.file.filename,
+                lesson_name_filesystem : aws.Key,
                 instructor_id : req.user._id,
                 video_id : video_id
 
@@ -489,13 +505,13 @@ router.post('/courses/course/lessonsUpload',auth,upload.single('upload'),async (
             await course.save()
             const students = await User.find({year : course.year})
             // console.log(students)
-            if(students){
-                const subject = "new lesson uploaded"
-                const text = "the instructor : " + req.user.name + " uploaded lesson " + req.body.lesson_title + " in course " + course.name
-                students.forEach((user)=>{
-                  // sendEmail(user.email,subject,text)
-                })
-            }
+            // if(students){
+            //     const subject = "new lesson uploaded"
+            //     const text = "the instructor : " + req.user.name + " uploaded lesson " + req.body.lesson_title + " in course " + course.name
+            //     students.forEach((user)=>{
+            //       // sendEmail(user.email,subject,text)
+            //     })
+            // }
 
             res.status(200).json('successfully uploaded')
 
@@ -504,6 +520,7 @@ router.post('/courses/course/lessonsUpload',auth,upload.single('upload'),async (
         }
 
     }catch(e){
+        console.log(e)
         res.status(500).json(e.message)
     }
 })
@@ -527,8 +544,10 @@ router.get('/courses/lessons/lesson/:course_id/:lesson_title',auth,async(req,res
         if(!lesson){
             return res.status(404).json('can not find the lesson ')
         }
-        const path = 'uploads/' + lesson.lesson_name_filesystem
-        res.download(path)
+        //const path = 'uploads/' + lesson.lesson_name_filesystem
+        const url = await AWS.aws_generateUrl(lesson.lesson_name_filesystem)
+        console.log(url)
+        res.status(200).json(url)
     }
     else{
         res.status(403).json('unauthorized')
@@ -590,15 +609,17 @@ router.post('/courses/course/assignmentUpload',auth,upload.single('upload'),asyn
 
         })
         if(enroll){
-           
+            const aws = await AWS.aws_upload(req.file.buffer,req.user.name,req.user.code)   
+            //console.log(aws)         
             const assignment = new Assignment({
                 title : req.body.title,
-                fileName : req.file.filename,
+                fileName : aws.Key,
                 courseCode : req.body.course_code,
                 studentCode : req.user.code,
                 studentName : req.user.name
             })
             await assignment.save()
+            // console.log(assignment.fileName)
             res.status(200).json('successfully uploaded ')
 
         }else{
@@ -626,8 +647,8 @@ router.get('/courses/course/assignments/assignment/:course_code/:title',auth,asy
             const zipAssignments = []
             assignments.forEach((assignment)=>{
                 zipAssignments.push({
-                    path : 'uploads/' + assignment.fileName,
-                    name : assignment.fileName
+                    path : assignment.fileName,
+                    name : assignment.fileName.splice(51)
                 })
             })
             res.zip(zipAssignments)
@@ -655,12 +676,10 @@ router.get('/courses/course/assignments/:course_code/:title',auth,async(req,res)
             if(assignments.length === 0 ){
                 return res.status(404).json('there are no assignments ')
             }
-            res.status(200).json(assignments)
-            
+            res.status(200).json(assignments)     
         }
         else{
             res.status(403).json('unauthorized')
-
         }
 
     }catch(e){
@@ -742,9 +761,10 @@ router.get('/courses/course/assignments/myAssignment/:course_id/:title',auth,asy
             if(!assignment){
                 return res.status(404).json('couldnt find the assignment ')
             }
-            const path = 'uploads/'+ assignment.fileName
-            console.log(path)
-            res.download(path)
+            
+            const url = await AWS.aws_generateUrl(assignment.fileName)
+            console.log(url)
+            res.status(200).json(url)
     }catch(e){
         res.status(500).json(e.message)
     }
@@ -797,9 +817,11 @@ router.post('/courses/course/instructorUploadAssignment',auth,upload.single('upl
             if(!course){
                 return res.status(404).json('can not find the course')
             }
+
+            const aws = await AWS.aws_upload(req.file.buffer,req.user.name,req.user.code)
             const assignment = new InstructorAssignment({
                 title : req.body.title,
-                fileName : req.file.filename,
+                fileName : aws.Key,
                 courseCode : req.body.course_code,
                 instructorCode : req.user.code,
                 instructorName : req.user.name
@@ -886,8 +908,10 @@ router.get('/courses/course/downloadAssignments/:course_id/:title',auth,async(re
             if(assignments.length == 0){
                 return res.status(404).json('ther are no  assignments uploaded')
             }
-            const path = 'uploads/'+assignments[0].fileName 
-            res.status(200).download(path)
+            //const path = 'uploads/'+assignments[0].fileName 
+            const url = await AWS.aws_generateUrl(assignments.fileName)
+            console.log(url)
+            res.status(200).json(url)
         }else if(req.user.role === 'instructor' ){
             const assignments = await InstructorAssignment.find({
                 courseCode : course.code,
@@ -895,8 +919,10 @@ router.get('/courses/course/downloadAssignments/:course_id/:title',auth,async(re
                 title : req.params.title
 
             })
-            const path = 'uploads/'+assignments[0].fileName 
-            res.status(200).download(path) 
+            //const path = 'uploads/'+assignments[0].fileName 
+            const url = await AWS.aws_generateUrl(assignments.fileName)
+            console.log(url)
+            res.status(200).json(url)
         }else{
             res.status(403).json('unauthorized')
         }
